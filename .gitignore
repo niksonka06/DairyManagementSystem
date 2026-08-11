@@ -1,0 +1,21 @@
+## Build results
+bin/
+obj/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+
+## Never commit real secrets
+appsettings.Production.json
+appsettings.*.local.json
+*.pfx
+
+## Rider / VS Code
+.idea/
+.vscode/
+
+## OS files
+.DS_Store
+Thumbs.db

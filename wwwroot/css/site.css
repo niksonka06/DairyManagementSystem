@@ -1,0 +1,12 @@
+/* Stage 1 placeholder. Bootstrap 5.3 (via CDN in _Layout) handles most
+   styling; add overrides here as real screens are built module by module. */
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
