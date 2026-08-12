@@ -15,6 +15,7 @@ namespace DairyManagementSystem.Data
         public DbSet<Society> Societies => Set<Society>();
         public DbSet<Farmer> Farmers => Set<Farmer>();
         public DbSet<MilkRate> MilkRates => Set<MilkRate>();
+        public DbSet<MilkCollection> MilkCollections => Set<MilkCollection>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         // Real business entities added here module by module as each stage
@@ -76,7 +77,7 @@ namespace DairyManagementSystem.Data
 
             builder.Entity<MilkRate>(entity =>
             {
-                entity.HasKey(r => r.RateID);
+                entity.HasKey(r => r.RateID); // RateID doesn't match EF Core's "Id"/"{ClassName}Id" convention
                 entity.Property(r => r.FatPercent).HasColumnType("decimal(4,2)");
                 entity.Property(r => r.RatePerLitre).HasColumnType("decimal(8,2)");
                 entity.Property(r => r.EffectiveFrom).HasColumnType("date");
@@ -98,6 +99,52 @@ namespace DairyManagementSystem.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(r => r.RowVersion).IsRowVersion();
+            });
+
+            builder.Entity<MilkCollection>(entity =>
+            {
+                entity.HasKey(c => c.CollectionID); // CollectionID doesn't match EF Core's convention
+
+                entity.Property(c => c.CollectionDate).HasColumnType("date");
+                entity.Property(c => c.Quantity).HasColumnType("decimal(8,2)");
+                entity.Property(c => c.FatPercent).HasColumnType("decimal(4,2)");
+                entity.Property(c => c.SNF).HasColumnType("decimal(4,2)");
+                entity.Property(c => c.CLR).HasColumnType("decimal(5,2)");
+                entity.Property(c => c.RatePerLitre).HasColumnType("decimal(8,2)");
+                entity.Property(c => c.Amount).HasColumnType("decimal(10,2)");
+
+                // Store the Shift enum as its string name ("Morning"/"Evening")
+                // rather than an int — matches the synopsis's own
+                // NVARCHAR(10) CHECK IN ('Morning','Evening') column exactly,
+                // and keeps the raw table human-readable if inspected directly.
+                entity.Property(c => c.Shift).HasConversion<string>().HasMaxLength(10);
+
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_Quantity", "[Quantity] BETWEEN 0.5 AND 500"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_FatPercent", "[FatPercent] BETWEEN 2.5 AND 9.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_SNF", "[SNF] IS NULL OR [SNF] BETWEEN 7.5 AND 11.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_RatePerLitre", "[RatePerLitre] > 0"));
+
+                // One entry per farmer/date/shift — the duplicate-prevention
+                // rule enforced at the database level too, not just the
+                // service-layer check.
+                entity.HasIndex(c => new { c.FarmerID, c.CollectionDate, c.Shift }).IsUnique();
+
+                entity.HasOne(c => c.Farmer)
+                    .WithMany()
+                    .HasForeignKey(c => c.FarmerID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.Society)
+                    .WithMany()
+                    .HasForeignKey(c => c.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(c => c.RecordedByUser)
+                    .WithMany()
+                    .HasForeignKey(c => c.RecordedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(c => c.RowVersion).IsRowVersion();
             });
 
             builder.Entity<AuditLog>(entity =>

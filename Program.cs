@@ -58,12 +58,14 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ISocietyRepository, SocietyRepository>();
 builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
 builder.Services.AddScoped<IMilkRateRepository, MilkRateRepository>();
+builder.Services.AddScoped<IMilkCollectionRepository, MilkCollectionRepository>();
 
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ISocietyService, SocietyService>();
 builder.Services.AddScoped<IFarmerService, FarmerService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IMilkRateService, MilkRateService>();
+builder.Services.AddScoped<IMilkCollectionService, MilkCollectionService>();
 
 var app = builder.Build();
 

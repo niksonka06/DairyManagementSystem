@@ -1,0 +1,89 @@
+@model List<MilkCollectionListItemViewModel>
+@{
+    ViewData["Title"] = "Milk Collection";
+    var selectedDate = (DateTime)ViewBag.SelectedDate;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Milk Collection</h2>
+    <a asp-action="Create" class="btn btn-primary">+ Record Collection</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<form method="get" class="row g-2 mb-3 align-items-end">
+    <div class="col-auto">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" value="@selectedDate.ToString("yyyy-MM-dd")" class="form-control" onchange="this.form.submit()" />
+    </div>
+</form>
+
+<div class="row mb-3">
+    <div class="col-auto">
+        <div class="card"><div class="card-body py-2 px-3">
+            <strong>Total Quantity:</strong> @ViewBag.DayTotalQuantity.ToString("0.00") L
+        </div></div>
+    </div>
+    <div class="col-auto">
+        <div class="card"><div class="card-body py-2 px-3">
+            <strong>Total Amount:</strong> ₹@ViewBag.DayTotalAmount.ToString("0.00")
+        </div></div>
+    </div>
+</div>
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Shift</th>
+            <th>Farmer</th>
+            <th>Qty (L)</th>
+            <th>Fat %</th>
+            <th>SNF</th>
+            <th>Rate</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var c in Model)
+        {
+            <tr>
+                <td>@c.Shift</td>
+                <td>@c.FarmerCode — @c.FarmerName</td>
+                <td>@c.Quantity.ToString("0.00")</td>
+                <td>@c.FatPercent.ToString("0.0")</td>
+                <td>@(c.SNF.HasValue ? c.SNF.Value.ToString("0.0") : "—")</td>
+                <td>₹@c.RatePerLitre.ToString("0.00")</td>
+                <td>₹@c.Amount.ToString("0.00")</td>
+                <td>
+                    @if (c.IsLocked)
+                    {
+                        <span class="badge bg-warning text-dark">Locked</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Open</span>
+                    }
+                </td>
+                <td class="text-end">
+                    @if (!c.IsLocked)
+                    {
+                        <a asp-action="Edit" asp-route-id="@c.CollectionID" class="btn btn-sm btn-outline-primary">Edit</a>
+                    }
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="9" class="text-center text-muted">No collections recorded for this date.</td></tr>
+        }
+    </tbody>
+</table>
