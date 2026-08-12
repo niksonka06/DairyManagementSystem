@@ -14,6 +14,7 @@ namespace DairyManagementSystem.Data
 
         public DbSet<Society> Societies => Set<Society>();
         public DbSet<Farmer> Farmers => Set<Farmer>();
+        public DbSet<MilkRate> MilkRates => Set<MilkRate>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         // Real business entities added here module by module as each stage
@@ -71,6 +72,32 @@ namespace DairyManagementSystem.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(f => f.RowVersion).IsRowVersion();
+            });
+
+            builder.Entity<MilkRate>(entity =>
+            {
+                entity.HasKey(r => r.RateID);
+                entity.Property(r => r.FatPercent).HasColumnType("decimal(4,2)");
+                entity.Property(r => r.RatePerLitre).HasColumnType("decimal(8,2)");
+                entity.Property(r => r.EffectiveFrom).HasColumnType("date");
+
+                // CHECK constraints at the database level — matches the
+                // synopsis's explicit CHECK(2.5-9.0) / CHECK(>0), and protects
+                // data integrity even if a future code path (or a raw SQL
+                // script) bypasses the C# [Range] validation.
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_FatPercent", "[FatPercent] BETWEEN 2.5 AND 9.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_RatePerLitre", "[RatePerLitre] > 0"));
+
+                // One rate per (society, fat%, effective date) — prevents two
+                // ambiguous rows for the exact same band on the exact same day.
+                entity.HasIndex(r => new { r.SocietyID, r.FatPercent, r.EffectiveFrom }).IsUnique();
+
+                entity.HasOne(r => r.Society)
+                    .WithMany()
+                    .HasForeignKey(r => r.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(r => r.RowVersion).IsRowVersion();
             });
 
             builder.Entity<AuditLog>(entity =>
