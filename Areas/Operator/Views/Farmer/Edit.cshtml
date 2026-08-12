@@ -1,0 +1,62 @@
+@model FarmerFormViewModel
+@{
+    ViewData["Title"] = "Edit Farmer";
+}
+
+<h2 class="mb-4">Edit Farmer</h2>
+
+<form asp-action="Edit" method="post" class="col-md-6">
+    <input type="hidden" asp-for="FarmerID" />
+    <input type="hidden" asp-for="RowVersion" />
+
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="FarmerCode" class="form-label"></label>
+        <input asp-for="FarmerCode" class="form-control" />
+        <span asp-validation-for="FarmerCode" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="FullName" class="form-label"></label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Phone" class="form-label"></label>
+        <input asp-for="Phone" class="form-control" />
+        <span asp-validation-for="Phone" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Address" class="form-label"></label>
+        <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Address" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="BankAccountNo" class="form-label"></label>
+        <input asp-for="BankAccountNo" class="form-control" />
+        <span asp-validation-for="BankAccountNo" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="BankName" class="form-label"></label>
+        <input asp-for="BankName" class="form-control" />
+        <span asp-validation-for="BankName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="IFSC" class="form-label"></label>
+        <input asp-for="IFSC" class="form-control" style="text-transform: uppercase;" />
+        <span asp-validation-for="IFSC" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

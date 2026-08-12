@@ -14,23 +14,43 @@
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
                     Smart Dairy Cooperative Management System
                 </a>
+                <ul class="navbar-nav me-auto">
+                    @if (User.Identity != null && User.Identity.IsAuthenticated)
+                    {
+                        if (User.IsInRole("Admin"))
+                        {
+                    <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Society" asp-action="Index">Societies</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="User" asp-action="Index">Operators</a></li>
+                        }
+                        else if (User.IsInRole("Operator"))
+                        {
+                    <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="Farmer" asp-action="Index">Farmers</a></li>
+                        }
+                        else if (User.IsInRole("Farmer"))
+                        {
+                    <li class="nav-item"><a class="nav-link" asp-area="Farmer" asp-controller="Home" asp-action="Index">Dashboard</a></li>
+                        }
+                    }
+                </ul>
                 <ul class="navbar-nav ms-auto">
                     @if (User.Identity != null && User.Identity.IsAuthenticated)
                     {
-                        <li class="nav-item">
-                            <span class="nav-link text-light">@User.Identity.Name</span>
-                        </li>
-                        <li class="nav-item">
-                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-                                <button type="submit" class="btn btn-link nav-link">Logout</button>
-                            </form>
-                        </li>
+                    <li class="nav-item">
+                        <span class="nav-link text-light">@User.Identity.Name</span>
+                    </li>
+                    <li class="nav-item">
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-link nav-link">Logout</button>
+                        </form>
+                    </li>
                     }
                     else
                     {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
-                        </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                    </li>
                     }
                 </ul>
             </div>

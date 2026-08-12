@@ -19,21 +19,21 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole<int>>(options =>
-    {
-        // Baseline password policy. Deliberately not exotic — matches
-        // "practical, not over-engineered" from the synopsis's quality
-        // standard, while still being a real policy, not Identity's
-        // permissive default.
-        options.Password.RequiredLength = 8;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = true;
-        options.Password.RequireDigit = true;
+{
+    // Baseline password policy. Deliberately not exotic — matches
+    // "practical, not over-engineered" from the synopsis's quality
+    // standard, while still being a real policy, not Identity's
+    // permissive default.
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireDigit = true;
 
-        options.Lockout.MaxFailedAccessAttempts = 5;
-        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(10);
 
-        options.User.RequireUniqueEmail = true;
-    })
+    options.User.RequireUniqueEmail = true;
+})
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
@@ -56,9 +56,12 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<ISocietyRepository, SocietyRepository>();
+builder.Services.AddScoped<IFarmerRepository, FarmerRepository>();
 
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ISocietyService, SocietyService>();
+builder.Services.AddScoped<IFarmerService, FarmerService>();
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 
 var app = builder.Build();
 

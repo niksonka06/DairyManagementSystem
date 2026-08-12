@@ -13,6 +13,7 @@ namespace DairyManagementSystem.Data
         }
 
         public DbSet<Society> Societies => Set<Society>();
+        public DbSet<Farmer> Farmers => Set<Farmer>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         // Real business entities added here module by module as each stage
@@ -42,9 +43,39 @@ namespace DairyManagementSystem.Data
                 entity.Property(s => s.RowVersion).IsRowVersion();
             });
 
+            builder.Entity<Farmer>(entity =>
+            {
+                entity.Property(f => f.FarmerCode).HasMaxLength(20).IsRequired();
+                entity.Property(f => f.FullName).HasMaxLength(100).IsRequired();
+                entity.Property(f => f.Phone).HasMaxLength(15).IsRequired();
+                entity.Property(f => f.Address).HasMaxLength(300).IsRequired();
+                entity.Property(f => f.BankAccountNo).HasMaxLength(20).IsRequired();
+                entity.Property(f => f.BankName).HasMaxLength(100).IsRequired();
+                entity.Property(f => f.IFSC).HasMaxLength(11).IsRequired();
+
+                // FarmerCode is unique PER SOCIETY (not globally) — a composite
+                // unique index matches that business rule exactly, versus a
+                // single-column unique index which would be too strict.
+                entity.HasIndex(f => new { f.SocietyID, f.FarmerCode }).IsUnique();
+
+                entity.HasIndex(f => f.UserID).IsUnique(); // one login per farmer
+
+                entity.HasOne(f => f.Society)
+                    .WithMany()
+                    .HasForeignKey(f => f.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict); // never cascade-delete a society and silently wipe its farmers
+
+                entity.HasOne(f => f.User)
+                    .WithMany()
+                    .HasForeignKey(f => f.UserID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(f => f.RowVersion).IsRowVersion();
+            });
+
             builder.Entity<AuditLog>(entity =>
             {
-                entity.HasKey(a => a.LogID);
+                entity.HasKey(a => a.LogID); // LogID doesn't match EF Core's "Id"/"{ClassName}Id" convention, so it must be declared explicitly
                 entity.Property(a => a.EntityType).HasMaxLength(50).IsRequired();
                 entity.Property(a => a.Action).HasMaxLength(50).IsRequired();
 
