@@ -16,6 +16,8 @@ namespace DairyManagementSystem.Data
         public DbSet<Farmer> Farmers => Set<Farmer>();
         public DbSet<MilkRate> MilkRates => Set<MilkRate>();
         public DbSet<MilkCollection> MilkCollections => Set<MilkCollection>();
+        public DbSet<FeedInventory> FeedInventoryItems => Set<FeedInventory>();
+        public DbSet<FeedIssue> FeedIssues => Set<FeedIssue>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         // Real business entities added here module by module as each stage
@@ -145,6 +147,61 @@ namespace DairyManagementSystem.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(c => c.RowVersion).IsRowVersion();
+            });
+
+            builder.Entity<FeedInventory>(entity =>
+            {
+                entity.HasKey(f => f.FeedItemID);
+                entity.Property(f => f.ItemType).HasConversion<string>().HasMaxLength(10);
+                entity.Property(f => f.FeedName).HasMaxLength(100).IsRequired();
+                entity.Property(f => f.Unit).HasMaxLength(20).IsRequired();
+                entity.Property(f => f.PricePerUnit).HasColumnType("decimal(10,2)");
+                entity.Property(f => f.StockQuantity).HasColumnType("decimal(10,2)");
+                entity.Property(f => f.LowStockThreshold).HasColumnType("decimal(10,2)");
+
+                entity.ToTable(t => t.HasCheckConstraint("CK_FeedInventory_PricePerUnit", "[PricePerUnit] > 0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_FeedInventory_StockQuantity", "[StockQuantity] >= 0")); // never negative — the synopsis's core Feed rule
+
+                entity.HasIndex(f => new { f.SocietyID, f.ItemType, f.FeedName }).IsUnique();
+
+                entity.HasOne(f => f.Society)
+                    .WithMany()
+                    .HasForeignKey(f => f.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(f => f.RowVersion).IsRowVersion();
+            });
+
+            builder.Entity<FeedIssue>(entity =>
+            {
+                entity.HasKey(i => i.IssueID);
+                entity.Property(i => i.ItemType).HasConversion<string>().HasMaxLength(10);
+                entity.Property(i => i.Quantity).HasColumnType("decimal(10,2)");
+                entity.Property(i => i.UnitPriceAtIssue).HasColumnType("decimal(10,2)");
+                entity.Property(i => i.TotalCost).HasColumnType("decimal(10,2)");
+                entity.Property(i => i.IssueDate).HasColumnType("date");
+
+                entity.ToTable(t => t.HasCheckConstraint("CK_FeedIssues_Quantity", "[Quantity] > 0"));
+
+                entity.HasOne(i => i.FeedItem)
+                    .WithMany()
+                    .HasForeignKey(i => i.FeedItemID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.Farmer)
+                    .WithMany()
+                    .HasForeignKey(i => i.FarmerID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.Society)
+                    .WithMany()
+                    .HasForeignKey(i => i.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(i => i.IssuedByUser)
+                    .WithMany()
+                    .HasForeignKey(i => i.IssuedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Entity<AuditLog>(entity =>

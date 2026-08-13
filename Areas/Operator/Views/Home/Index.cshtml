@@ -3,7 +3,7 @@
 }
 
 <h2 class="mb-4">Operator Dashboard</h2>
-<p class="text-muted">Today's collection status, feed stock, and pending settlements arrive as their modules are built (Stages 7-10).</p>
+<p class="text-muted">Pending settlements and dispatch arrive as their modules are built (Stages 9-11).</p>
 
 <div class="row g-3">
     <div class="col-auto">
@@ -21,6 +21,24 @@
                 <h5 class="card-title">Milk Rate Chart</h5>
                 <p class="card-text">Set fat-based rates per litre for your society.</p>
                 <a asp-controller="MilkRate" asp-action="Index" class="btn btn-primary">Manage Rates</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="card" style="width: 20rem;">
+            <div class="card-body">
+                <h5 class="card-title">Milk Collection</h5>
+                <p class="card-text">Record daily morning/evening collections.</p>
+                <a asp-controller="MilkCollection" asp-action="Index" class="btn btn-primary">Record Collection</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="card" style="width: 20rem;">
+            <div class="card-body">
+                <h5 class="card-title">Feed & Medicine</h5>
+                <p class="card-text">Manage stock and issue items to farmers.</p>
+                <a asp-controller="FeedInventory" asp-action="Index" class="btn btn-primary">Manage Inventory</a>
             </div>
         </div>
     </div>
