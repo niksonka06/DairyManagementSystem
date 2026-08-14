@@ -39,5 +39,36 @@ namespace DairyManagementSystem.Repositories
                 .Include(c => c.Farmer)
                 .FirstOrDefaultAsync(c => c.CollectionID == collectionId && c.SocietyID == societyId, ct);
         }
+
+        public async Task<List<MilkCollection>> GetUnlockedByFarmerAndPeriodAsync(int farmerId, DateTime periodStart, DateTime periodEnd, CancellationToken ct = default)
+        {
+            return await DbSet
+                .Where(c => c.FarmerID == farmerId
+                            && !c.IsLocked
+                            && c.CollectionDate >= periodStart.Date
+                            && c.CollectionDate <= periodEnd.Date)
+                .ToListAsync(ct);
+        }
+
+        public async Task<List<MilkCollection>> GetLockedBySettlementAsync(int paymentId, CancellationToken ct = default)
+        {
+            return await DbSet.Where(c => c.LockedBySettlementID == paymentId).ToListAsync(ct);
+        }
+
+        public async Task<decimal> GetTotalQuantityBySocietyAndDateAsync(int societyId, DateTime date, CancellationToken ct = default)
+        {
+            var day = date.Date;
+            return await DbSet
+                .Where(c => c.SocietyID == societyId && c.CollectionDate == day)
+                .SumAsync(c => (decimal?)c.Quantity, ct) ?? 0m;
+        }
+
+        public async Task<List<MilkCollection>> GetBySocietyAndDateRangeAsync(int societyId, DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Include(c => c.Farmer)
+                .Where(c => c.SocietyID == societyId && c.CollectionDate >= from.Date && c.CollectionDate <= to.Date)
+                .ToListAsync(ct);
+        }
     }
 }

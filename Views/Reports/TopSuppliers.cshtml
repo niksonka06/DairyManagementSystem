@@ -1,0 +1,59 @@
+@model TopSuppliersReportViewModel
+@{
+    ViewData["Title"] = "Top Suppliers Report";
+    int? societyId = ViewBag.SocietyId;
+}
+
+<h2 class="mb-4">Top Suppliers Report</h2>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <input type="hidden" name="societyId" value="@societyId" />
+    <div class="col-auto">
+        <label class="form-label">From</label>
+        <input type="date" name="from" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">To</label>
+        <input type="date" name="to" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">View</button>
+        <a href="@Url.Action("TopSuppliersPdf", new { societyId, from = Model.FromDate.ToString("yyyy-MM-dd"), to = Model.ToDate.ToString("yyyy-MM-dd") })" class="btn btn-outline-secondary">Download PDF</a>
+    </div>
+</form>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <h5>Top 10 by Quantity</h5>
+        <canvas id="qtyChart" height="220"></canvas>
+    </div>
+    <div class="col-md-6 mb-4">
+        <h5>Top 10 by Income</h5>
+        <canvas id="incomeChart" height="220"></canvas>
+    </div>
+</div>
+
+<a asp-action="Index" asp-route-societyId="@societyId" class="btn btn-outline-secondary">Back to Reports</a>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const qtyLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopByQuantity.Select(s => s.FarmerCode)));
+        const qtyValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopByQuantity.Select(s => s.Value)));
+
+        new Chart(document.getElementById('qtyChart'), {
+            type: 'bar',
+            data: { labels: qtyLabels, datasets: [{ label: 'Litres', data: qtyValues, backgroundColor: '#0d6efd' }] },
+            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+
+        const incLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopByIncome.Select(s => s.FarmerCode)));
+        const incValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopByIncome.Select(s => s.Value)));
+
+        new Chart(document.getElementById('incomeChart'), {
+            type: 'bar',
+            data: { labels: incLabels, datasets: [{ label: 'Rupees', data: incValues, backgroundColor: '#198754' }] },
+            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+    </script>
+}

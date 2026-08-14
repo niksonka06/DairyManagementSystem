@@ -1,4 +1,5 @@
 using DairyManagementSystem.Models.Entities;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,10 @@ namespace DairyManagementSystem.Data
         public DbSet<MilkCollection> MilkCollections => Set<MilkCollection>();
         public DbSet<FeedInventory> FeedInventoryItems => Set<FeedInventory>();
         public DbSet<FeedIssue> FeedIssues => Set<FeedIssue>();
+        public DbSet<Payment> Payments => Set<Payment>();
+        public DbSet<SettlementDeduction> SettlementDeductions => Set<SettlementDeduction>();
+        public DbSet<AdvancePayment> AdvancePayments => Set<AdvancePayment>();
+        public DbSet<Dispatch> Dispatches => Set<Dispatch>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         // Real business entities added here module by module as each stage
@@ -34,6 +39,7 @@ namespace DairyManagementSystem.Data
 
             builder.Entity<Society>(entity =>
             {
+                entity.HasKey(s => s.SocietyID);
                 entity.Property(s => s.SocietyName).HasMaxLength(200).IsRequired();
                 entity.Property(s => s.RegistrationNo).HasMaxLength(50).IsRequired();
                 entity.Property(s => s.Address).HasMaxLength(300).IsRequired();
@@ -49,6 +55,7 @@ namespace DairyManagementSystem.Data
 
             builder.Entity<Farmer>(entity =>
             {
+                entity.HasKey(f => f.FarmerID);
                 entity.Property(f => f.FarmerCode).HasMaxLength(20).IsRequired();
                 entity.Property(f => f.FullName).HasMaxLength(100).IsRequired();
                 entity.Property(f => f.Phone).HasMaxLength(15).IsRequired();
@@ -151,7 +158,7 @@ namespace DairyManagementSystem.Data
 
             builder.Entity<FeedInventory>(entity =>
             {
-                entity.HasKey(f => f.FeedItemID);
+                entity.HasKey(f => f.FeedItemID); // FeedItemID doesn't match EF Core's naming convention
                 entity.Property(f => f.ItemType).HasConversion<string>().HasMaxLength(10);
                 entity.Property(f => f.FeedName).HasMaxLength(100).IsRequired();
                 entity.Property(f => f.Unit).HasMaxLength(20).IsRequired();
@@ -174,7 +181,7 @@ namespace DairyManagementSystem.Data
 
             builder.Entity<FeedIssue>(entity =>
             {
-                entity.HasKey(i => i.IssueID);
+                entity.HasKey(i => i.IssueID); // IssueID doesn't match "FeedIssueId" convention
                 entity.Property(i => i.ItemType).HasConversion<string>().HasMaxLength(10);
                 entity.Property(i => i.Quantity).HasColumnType("decimal(10,2)");
                 entity.Property(i => i.UnitPriceAtIssue).HasColumnType("decimal(10,2)");
@@ -202,6 +209,117 @@ namespace DairyManagementSystem.Data
                     .WithMany()
                     .HasForeignKey(i => i.IssuedBy)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<Payment>(entity =>
+            {
+                entity.HasKey(p => p.PaymentID);
+                entity.Property(p => p.PeriodStart).HasColumnType("date");
+                entity.Property(p => p.PeriodEnd).HasColumnType("date");
+                entity.Property(p => p.GrossAmount).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.FeedDeduction).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.MedicineDeduction).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.OtherDeductionsTotal).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.PreviousDue).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.AdvancePaid).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.NetAmount).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
+                entity.Property(p => p.CancellationReason).HasMaxLength(500);
+
+                // Duplicate-settlement prevention at the DB level: one
+                // NON-CANCELLED settlement per farmer per period. A filtered
+                // unique index (not a plain one) is required here specifically
+                // because Cancelled settlements must NOT count — a farmer can
+                // have a cancelled settlement AND a fresh valid one for the
+                // same week.
+                entity.HasIndex(p => new { p.FarmerID, p.PeriodStart })
+                    .IsUnique()
+                    .HasFilter("[Status] <> 'Cancelled'");
+
+                entity.HasOne(p => p.Farmer)
+                    .WithMany()
+                    .HasForeignKey(p => p.FarmerID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.Society)
+                    .WithMany()
+                    .HasForeignKey(p => p.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(p => p.GeneratedByUser)
+                    .WithMany()
+                    .HasForeignKey(p => p.GeneratedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasMany(p => p.Deductions)
+                    .WithOne(d => d.Payment)
+                    .HasForeignKey(d => d.PaymentID)
+                    .OnDelete(DeleteBehavior.Cascade); // deduction lines are owned by their settlement — delete with it (settlements are soft-cancelled, never hard-deleted, so this rarely fires)
+
+                entity.Property(p => p.RowVersion).IsRowVersion();
+            });
+
+            builder.Entity<SettlementDeduction>(entity =>
+            {
+                entity.HasKey(d => d.SettlementDeductionID);
+                entity.Property(d => d.DeductionType).HasConversion<string>().HasMaxLength(20);
+                entity.Property(d => d.Amount).HasColumnType("decimal(12,2)");
+                entity.ToTable(t => t.HasCheckConstraint("CK_SettlementDeductions_Amount", "[Amount] > 0"));
+            });
+
+            builder.Entity<AdvancePayment>(entity =>
+            {
+                entity.HasKey(a => a.AdvancePaymentID);
+                entity.Property(a => a.Amount).HasColumnType("decimal(12,2)");
+                entity.Property(a => a.PaymentDate).HasColumnType("date");
+                entity.ToTable(t => t.HasCheckConstraint("CK_AdvancePayments_Amount", "[Amount] > 0"));
+
+                entity.HasOne(a => a.Farmer)
+                    .WithMany()
+                    .HasForeignKey(a => a.FarmerID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(a => a.RecordedByUser)
+                    .WithMany()
+                    .HasForeignKey(a => a.RecordedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<Dispatch>(entity =>
+            {
+                entity.HasKey(d => d.DispatchID); // matches convention, but declared explicitly for consistency
+
+                entity.Property(d => d.DispatchDate).HasColumnType("date");
+                entity.Property(d => d.DispatchTime).HasColumnType("time");
+                entity.Property(d => d.VehicleNo).HasMaxLength(20).IsRequired();
+                entity.Property(d => d.Destination).HasMaxLength(100).IsRequired();
+                entity.Property(d => d.TotalCollected).HasColumnType("decimal(10,2)");
+                entity.Property(d => d.TotalDispatched).HasColumnType("decimal(10,2)");
+                entity.Property(d => d.VarianceReason).HasMaxLength(300);
+
+                entity.ToTable(t => t.HasCheckConstraint("CK_Dispatches_TotalDispatched", "[TotalDispatched] > 0"));
+
+                // One reconciliation record per society per day.
+                entity.HasIndex(d => new { d.SocietyID, d.DispatchDate }).IsUnique();
+
+                // Variance and VariancePercent are computed C# properties,
+                // not mapped columns — EF Core ignores them automatically
+                // since they have no setter backing field, but being
+                // explicit here avoids any ambiguity.
+                entity.Ignore(d => d.Variance);
+                entity.Ignore(d => d.VariancePercent);
+
+                entity.HasOne(d => d.Society)
+                    .WithMany()
+                    .HasForeignKey(d => d.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(d => d.RecordedByUser)
+                    .WithMany()
+                    .HasForeignKey(d => d.RecordedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.Property(d => d.RowVersion).IsRowVersion();
             });
 
             builder.Entity<AuditLog>(entity =>

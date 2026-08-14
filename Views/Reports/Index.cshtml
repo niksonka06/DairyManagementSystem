@@ -1,0 +1,43 @@
+@{
+    ViewData["Title"] = "Reports";
+    var isAdmin = User.IsInRole("Admin");
+    int? selectedSocietyId = ViewBag.SelectedSocietyId;
+}
+
+<h2 class="mb-4">Reports & Analytics</h2>
+
+@if (isAdmin)
+{
+    <form method="get" class="row g-2 mb-4 align-items-end">
+        <div class="col-auto">
+            <label class="form-label">Society</label>
+            <select name="societyId" class="form-select" onchange="this.form.submit()">
+                <option value="">-- Select a society --</option>
+                @foreach (var s in (List<Society>)ViewBag.Societies)
+                {
+                    <option value="@s.SocietyID" selected="@(s.SocietyID == selectedSocietyId)">@s.SocietyName</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    @if (selectedSocietyId is null)
+    {
+        <div class="alert alert-info">Select a society above to view its reports.</div>
+        return;
+    }
+}
+
+@{
+    var qs = isAdmin ? $"?societyId={selectedSocietyId}" : "";
+}
+
+<div class="row g-3">
+    <div class="col-auto"><a href="@Url.Action("DailyCollection", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Daily Collection</a></div>
+    <div class="col-auto"><a href="@Url.Action("WeeklyCollection", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Weekly Collection Summary</a></div>
+    <div class="col-auto"><a href="@Url.Action("FarmerSettlement", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Farmer Settlement</a></div>
+    <div class="col-auto"><a href="@Url.Action("FeedStock", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Feed Stock</a></div>
+    <div class="col-auto"><a href="@Url.Action("Dispatch", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Dispatch</a></div>
+    <div class="col-auto"><a href="@Url.Action("FatAnalysis", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Fat Analysis</a></div>
+    <div class="col-auto"><a href="@Url.Action("TopSuppliers", new { societyId = selectedSocietyId })" class="btn btn-outline-primary">Top Suppliers</a></div>
+</div>

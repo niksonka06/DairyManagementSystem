@@ -3,7 +3,13 @@
 }
 
 <h2 class="mb-4">Operator Dashboard</h2>
-<p class="text-muted">Pending settlements and dispatch arrive as their modules are built (Stages 9-11).</p>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h5>Last 7 Days — Collection Trend</h5>
+        <canvas id="trendChart" height="90"></canvas>
+    </div>
+</div>
 
 <div class="row g-3">
     <div class="col-auto">
@@ -42,4 +48,45 @@
             </div>
         </div>
     </div>
+    <div class="col-auto">
+        <div class="card" style="width: 20rem;">
+            <div class="card-body">
+                <h5 class="card-title">Settlements</h5>
+                <p class="card-text">Generate weekly farmer settlements.</p>
+                <a asp-controller="Settlement" asp-action="Index" class="btn btn-primary">Manage Settlements</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="card" style="width: 20rem;">
+            <div class="card-body">
+                <h5 class="card-title">Dispatch</h5>
+                <p class="card-text">Record daily dispatch and reconcile against collection.</p>
+                <a asp-controller="Dispatch" asp-action="Index" class="btn btn-primary">Manage Dispatch</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        <div class="card" style="width: 20rem;">
+            <div class="card-body">
+                <h5 class="card-title">Reports</h5>
+                <p class="card-text">Collection, settlement, stock, dispatch, and fat analysis reports.</p>
+                <a asp-area="" asp-controller="Reports" asp-action="Index" class="btn btn-primary">View Reports</a>
+            </div>
+        </div>
+    </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const trendLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.TrendLabels ?? new List<string>()));
+        const trendValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.TrendValues ?? new List<decimal>()));
+
+        new Chart(document.getElementById('trendChart'), {
+            type: 'bar',
+            data: { labels: trendLabels, datasets: [{ label: 'Litres Collected', data: trendValues, backgroundColor: '#0d6efd' }] },
+            options: { plugins: { legend: { display: false } } }
+        });
+    </script>
+}

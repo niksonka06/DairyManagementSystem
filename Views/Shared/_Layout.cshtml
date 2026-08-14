@@ -22,6 +22,8 @@
                             <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Home" asp-action="Index">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="Society" asp-action="Index">Societies</a></li>
                             <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="User" asp-action="Index">Operators</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Admin" asp-controller="SettlementUnlock" asp-action="Index">Unlock Settlements</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Reports" asp-action="Index">Reports</a></li>
                         }
                         else if (User.IsInRole("Operator"))
                         {
@@ -31,6 +33,10 @@
                             <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="MilkCollection" asp-action="Index">Collection</a></li>
                             <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="FeedInventory" asp-action="Index">Inventory</a></li>
                             <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="FeedIssue" asp-action="Index">Issues</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="Settlement" asp-action="Index">Settlements</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="AdvancePayment" asp-action="Index">Advances</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="Operator" asp-controller="Dispatch" asp-action="Index">Dispatch</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-area="" asp-controller="Reports" asp-action="Index">Reports</a></li>
                         }
                         else if (User.IsInRole("Farmer"))
                         {

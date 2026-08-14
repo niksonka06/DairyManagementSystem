@@ -1,0 +1,61 @@
+@using DairyManagementSystem.Models.Enums
+@model List<SettlementListItemViewModel>
+@{
+    ViewData["Title"] = "Settlements";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Settlements</h2>
+    <a asp-action="Create" class="btn btn-primary">+ New Settlement</a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Period</th>
+            <th>Farmer</th>
+            <th>Net Amount</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.PeriodStart.ToString("dd-MMM") — @p.PeriodEnd.ToString("dd-MMM-yyyy")</td>
+                <td>@p.FarmerCode — @p.FarmerName</td>
+                <td>₹@p.NetAmount.ToString("0.00")</td>
+                <td>
+                    @{
+                        var badgeClass = p.Status switch
+                        {
+                            SettlementStatus.Draft => "bg-secondary",
+                            SettlementStatus.Generated => "bg-warning text-dark",
+                            SettlementStatus.Paid => "bg-success",
+                            SettlementStatus.Cancelled => "bg-danger",
+                            _ => "bg-secondary"
+                        };
+                    }
+                    <span class="badge @badgeClass">@p.Status</span>
+                </td>
+                <td class="text-end">
+                    <a asp-action="Details" asp-route-id="@p.PaymentID" class="btn btn-sm btn-outline-primary">View</a>
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="5" class="text-center text-muted">No settlements yet.</td></tr>
+        }
+    </tbody>
+</table>

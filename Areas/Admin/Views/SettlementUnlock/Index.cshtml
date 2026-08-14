@@ -1,0 +1,44 @@
+@model List<SettlementUnlockListItemViewModel>
+@{
+    ViewData["Title"] = "Unlock Settlements";
+}
+
+<h2 class="mb-4">Unlock Settlements</h2>
+<p class="text-muted">Generated settlements from every society. Unlocking cancels the settlement and makes its collections/feed issues editable again — requires a reason, and is fully audited.</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<table class="table table-striped table-hover align-middle">
+    <thead>
+        <tr>
+            <th>Society</th>
+            <th>Farmer</th>
+            <th>Period</th>
+            <th>Net Amount</th>
+            <th>Generated</th>
+            <th class="text-end">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td>@p.SocietyName</td>
+                <td>@p.FarmerCode — @p.FarmerName</td>
+                <td>@p.PeriodStart.ToString("dd-MMM") — @p.PeriodEnd.ToString("dd-MMM-yyyy")</td>
+                <td>₹@p.NetAmount.ToString("0.00")</td>
+                <td>@(p.GeneratedAt?.ToString("dd-MMM-yyyy HH:mm") ?? "—")</td>
+                <td class="text-end">
+                    <a asp-action="Unlock" asp-route-id="@p.PaymentID" class="btn btn-sm btn-outline-danger">Unlock</a>
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="6" class="text-center text-muted">No generated settlements to unlock.</td></tr>
+        }
+    </tbody>
+</table>

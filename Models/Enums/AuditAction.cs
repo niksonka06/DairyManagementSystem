@@ -10,6 +10,8 @@ namespace DairyManagementSystem.Models.Enums
         Updated,
         Deleted,
         Activated,
-        Deactivated
+        Deactivated,
+        SettlementGenerated,
+        Unlocked
     }
 }

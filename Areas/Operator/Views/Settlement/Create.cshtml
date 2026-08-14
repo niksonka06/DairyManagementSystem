@@ -1,0 +1,66 @@
+@model SettlementCreateViewModel
+@{
+    ViewData["Title"] = "New Settlement";
+}
+
+<h2 class="mb-4">New Settlement</h2>
+
+<form asp-action="Create" method="post" class="col-md-6">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="FarmerID" class="form-label"></label>
+        <select asp-for="FarmerID" class="form-select">
+            <option value="">-- Select Farmer --</option>
+            @foreach (var f in Model.AvailableFarmers)
+            {
+                <option value="@f.FarmerID">@f.FarmerCode — @f.FullName</option>
+            }
+        </select>
+        <span asp-validation-for="FarmerID" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="WeekReferenceDate" class="form-label"></label>
+        <input asp-for="WeekReferenceDate" class="form-control" />
+        <span asp-validation-for="WeekReferenceDate" class="text-danger"></span>
+        <div class="form-text">The settlement will automatically cover the full Monday-Sunday week containing this date. Gross amount and Feed/Medicine deductions are calculated automatically from unlocked records in that week.</div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="PreviousDue" class="form-label"></label>
+        <input asp-for="PreviousDue" class="form-control" type="number" step="0.01" min="0" />
+        <span asp-validation-for="PreviousDue" class="text-danger"></span>
+    </div>
+
+    <hr />
+    <h5>Other Deductions</h5>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="LoanDeduction" class="form-label"></label>
+            <input asp-for="LoanDeduction" class="form-control" type="number" step="0.01" min="0" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="InsuranceDeduction" class="form-label"></label>
+            <input asp-for="InsuranceDeduction" class="form-control" type="number" step="0.01" min="0" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="SocietyFeeDeduction" class="form-label"></label>
+            <input asp-for="SocietyFeeDeduction" class="form-control" type="number" step="0.01" min="0" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="OtherDeduction" class="form-label"></label>
+            <input asp-for="OtherDeduction" class="form-control" type="number" step="0.01" min="0" />
+        </div>
+    </div>
+
+    <p class="text-muted">Any unapplied advance payments for this farmer will be pulled in automatically and shown on the next screen.</p>
+
+    <button type="submit" class="btn btn-primary">Create Draft</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

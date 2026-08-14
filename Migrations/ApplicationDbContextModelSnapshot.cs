@@ -22,6 +22,50 @@ namespace DairyManagementSystem.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.AdvancePayment", b =>
+                {
+                    b.Property<int>("AdvancePaymentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AdvancePaymentID"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<int?>("AppliedToPaymentID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FarmerID")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsApplied")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("RecordedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SocietyID")
+                        .HasColumnType("int");
+
+                    b.HasKey("AdvancePaymentID");
+
+                    b.HasIndex("FarmerID");
+
+                    b.HasIndex("RecordedBy");
+
+                    b.ToTable("AdvancePayments", t =>
+                        {
+                            t.HasCheckConstraint("CK_AdvancePayments_Amount", "[Amount] > 0");
+                        });
+                });
+
             modelBuilder.Entity("DairyManagementSystem.Models.Entities.ApplicationUser", b =>
                 {
                     b.Property<int>("Id")
@@ -147,6 +191,68 @@ namespace DairyManagementSystem.Migrations
                     b.HasIndex("EntityType", "EntityID");
 
                     b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.Dispatch", b =>
+                {
+                    b.Property<int>("DispatchID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DispatchID"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Destination")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("DispatchDate")
+                        .HasColumnType("date");
+
+                    b.Property<TimeSpan>("DispatchTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("RecordedBy")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SocietyID")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalCollected")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<decimal>("TotalDispatched")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<string>("VarianceReason")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("VehicleNo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("DispatchID");
+
+                    b.HasIndex("RecordedBy");
+
+                    b.HasIndex("SocietyID", "DispatchDate")
+                        .IsUnique();
+
+                    b.ToTable("Dispatches", t =>
+                        {
+                            t.HasCheckConstraint("CK_Dispatches_TotalDispatched", "[TotalDispatched] > 0");
+                        });
                 });
 
             modelBuilder.Entity("DairyManagementSystem.Models.Entities.Farmer", b =>
@@ -283,8 +389,11 @@ namespace DairyManagementSystem.Migrations
 
             modelBuilder.Entity("DairyManagementSystem.Models.Entities.FeedIssue", b =>
                 {
-                    b.Property<int>("FeedItemID")
+                    b.Property<int>("IssueID")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IssueID"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -292,14 +401,14 @@ namespace DairyManagementSystem.Migrations
                     b.Property<int>("FarmerID")
                         .HasColumnType("int");
 
+                    b.Property<int>("FeedItemID")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsLocked")
                         .HasColumnType("bit");
 
                     b.Property<DateTime>("IssueDate")
                         .HasColumnType("date");
-
-                    b.Property<int>("IssueID")
-                        .HasColumnType("int");
 
                     b.Property<int>("IssuedBy")
                         .HasColumnType("int");
@@ -324,9 +433,11 @@ namespace DairyManagementSystem.Migrations
                     b.Property<decimal>("UnitPriceAtIssue")
                         .HasColumnType("decimal(10,2)");
 
-                    b.HasKey("FeedItemID");
+                    b.HasKey("IssueID");
 
                     b.HasIndex("FarmerID");
+
+                    b.HasIndex("FeedItemID");
 
                     b.HasIndex("IssuedBy");
 
@@ -456,6 +567,122 @@ namespace DairyManagementSystem.Migrations
                             t.HasCheckConstraint("CK_MilkRates_FatPercent", "[FatPercent] BETWEEN 2.5 AND 9.0");
 
                             t.HasCheckConstraint("CK_MilkRates_RatePerLitre", "[RatePerLitre] > 0");
+                        });
+                });
+
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.Payment", b =>
+                {
+                    b.Property<int>("PaymentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentID"));
+
+                    b.Property<decimal>("AdvancePaid")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CancelledBy")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("FarmerID")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("FeedDeduction")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime?>("GeneratedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("GeneratedBy")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("GrossAmount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<decimal>("MedicineDeduction")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<decimal>("NetAmount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<decimal>("OtherDeductionsTotal")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<decimal>("PreviousDue")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SocietyID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("PaymentID");
+
+                    b.HasIndex("GeneratedBy");
+
+                    b.HasIndex("SocietyID");
+
+                    b.HasIndex("FarmerID", "PeriodStart")
+                        .IsUnique()
+                        .HasFilter("[Status] <> 'Cancelled'");
+
+                    b.ToTable("Payments");
+                });
+
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.SettlementDeduction", b =>
+                {
+                    b.Property<int>("SettlementDeductionID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SettlementDeductionID"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<string>("DeductionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("PaymentID")
+                        .HasColumnType("int");
+
+                    b.HasKey("SettlementDeductionID");
+
+                    b.HasIndex("PaymentID");
+
+                    b.ToTable("SettlementDeductions", t =>
+                        {
+                            t.HasCheckConstraint("CK_SettlementDeductions_Amount", "[Amount] > 0");
                         });
                 });
 
@@ -640,6 +867,25 @@ namespace DairyManagementSystem.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.AdvancePayment", b =>
+                {
+                    b.HasOne("DairyManagementSystem.Models.Entities.Farmer", "Farmer")
+                        .WithMany()
+                        .HasForeignKey("FarmerID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DairyManagementSystem.Models.Entities.ApplicationUser", "RecordedByUser")
+                        .WithMany()
+                        .HasForeignKey("RecordedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Farmer");
+
+                    b.Navigation("RecordedByUser");
+                });
+
             modelBuilder.Entity("DairyManagementSystem.Models.Entities.AuditLog", b =>
                 {
                     b.HasOne("DairyManagementSystem.Models.Entities.ApplicationUser", "PerformedByUser")
@@ -649,6 +895,25 @@ namespace DairyManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("PerformedByUser");
+                });
+
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.Dispatch", b =>
+                {
+                    b.HasOne("DairyManagementSystem.Models.Entities.ApplicationUser", "RecordedByUser")
+                        .WithMany()
+                        .HasForeignKey("RecordedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DairyManagementSystem.Models.Entities.Society", "Society")
+                        .WithMany()
+                        .HasForeignKey("SocietyID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RecordedByUser");
+
+                    b.Navigation("Society");
                 });
 
             modelBuilder.Entity("DairyManagementSystem.Models.Entities.Farmer", b =>
@@ -754,6 +1019,43 @@ namespace DairyManagementSystem.Migrations
                     b.Navigation("Society");
                 });
 
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.Payment", b =>
+                {
+                    b.HasOne("DairyManagementSystem.Models.Entities.Farmer", "Farmer")
+                        .WithMany()
+                        .HasForeignKey("FarmerID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("DairyManagementSystem.Models.Entities.ApplicationUser", "GeneratedByUser")
+                        .WithMany()
+                        .HasForeignKey("GeneratedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("DairyManagementSystem.Models.Entities.Society", "Society")
+                        .WithMany()
+                        .HasForeignKey("SocietyID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Farmer");
+
+                    b.Navigation("GeneratedByUser");
+
+                    b.Navigation("Society");
+                });
+
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.SettlementDeduction", b =>
+                {
+                    b.HasOne("DairyManagementSystem.Models.Entities.Payment", "Payment")
+                        .WithMany("Deductions")
+                        .HasForeignKey("PaymentID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<int>", null)
@@ -803,6 +1105,11 @@ namespace DairyManagementSystem.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.Payment", b =>
+                {
+                    b.Navigation("Deductions");
                 });
 #pragma warning restore 612, 618
         }

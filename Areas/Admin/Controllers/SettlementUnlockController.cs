@@ -1,0 +1,79 @@
+using DairyManagementSystem.Helpers;
+using DairyManagementSystem.Interfaces;
+using DairyManagementSystem.Models.Entities;
+using DairyManagementSystem.Models.Enums;
+using DairyManagementSystem.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+
+namespace DairyManagementSystem.Areas.Admin.Controllers
+{
+    [Area("Admin")]
+    [Authorize(Roles = Roles.Admin)]
+    public class SettlementUnlockController : Controller
+    {
+        private readonly IPaymentService _paymentService;
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public SettlementUnlockController(IPaymentService paymentService, UserManager<ApplicationUser> userManager)
+        {
+            _paymentService = paymentService;
+            _userManager = userManager;
+        }
+
+        public async Task<IActionResult> Index(CancellationToken ct)
+        {
+            var payments = await _paymentService.GetGeneratedAcrossAllSocietiesAsync(ct);
+
+            var viewModel = payments.Select(p => new SettlementUnlockListItemViewModel
+            {
+                PaymentID = p.PaymentID,
+                SocietyName = p.Society?.SocietyName ?? string.Empty,
+                FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
+                FarmerName = p.Farmer?.FullName ?? string.Empty,
+                PeriodStart = p.PeriodStart,
+                PeriodEnd = p.PeriodEnd,
+                NetAmount = p.NetAmount,
+                GeneratedAt = p.GeneratedAt
+            }).ToList();
+
+            return View(viewModel);
+        }
+
+        [HttpGet]
+        public IActionResult Unlock(int id)
+        {
+            return View(new SettlementUnlockViewModel { PaymentID = id });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Unlock(SettlementUnlockViewModel model, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                await _paymentService.CancelGeneratedAsync(model.PaymentID, CurrentUserId(), model.Reason, ct);
+                TempData["Success"] = "Settlement unlocked. Its collections and feed issues are editable again.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (BusinessRuleException ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return View(model);
+            }
+        }
+
+        private int CurrentUserId()
+        {
+            var idString = _userManager.GetUserId(User)
+                ?? throw new InvalidOperationException("No authenticated user id found.");
+            return int.Parse(idString);
+        }
+    }
+}

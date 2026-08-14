@@ -1,0 +1,71 @@
+@model SettlementDetailsViewModel
+@using DairyManagementSystem.Models.Enums
+@{
+    ViewData["Title"] = "Settlement Details";
+}
+
+<h2 class="mb-1">@Model.FarmerCode — @Model.FarmerName</h2>
+<p class="text-muted">@Model.PeriodStart.ToString("dd-MMM-yyyy") to @Model.PeriodEnd.ToString("dd-MMM-yyyy")</p>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+@{
+    var badgeClass = Model.Status switch
+    {
+        SettlementStatus.Draft => "bg-secondary",
+        SettlementStatus.Generated => "bg-warning text-dark",
+        SettlementStatus.Paid => "bg-success",
+        SettlementStatus.Cancelled => "bg-danger",
+        _ => "bg-secondary"
+    };
+}
+<p><span class="badge @badgeClass fs-6">@Model.Status</span></p>
+
+@if (Model.Status == SettlementStatus.Cancelled && !string.IsNullOrEmpty(Model.CancellationReason))
+{
+    <div class="alert alert-danger">Cancelled — Reason: @Model.CancellationReason</div>
+}
+
+<table class="table w-auto">
+    <tr><th>Gross Amount</th><td>₹@Model.GrossAmount.ToString("0.00")</td></tr>
+    <tr><th>Feed Deduction</th><td>−₹@Model.FeedDeduction.ToString("0.00")</td></tr>
+    <tr><th>Medicine Deduction</th><td>−₹@Model.MedicineDeduction.ToString("0.00")</td></tr>
+    @foreach (var line in Model.DeductionLines)
+    {
+        <tr><th>@line.Type Deduction</th><td>−₹@line.Amount.ToString("0.00")</td></tr>
+    }
+    <tr><th>Previous Due</th><td>+₹@Model.PreviousDue.ToString("0.00")</td></tr>
+    <tr><th>Advance Paid</th><td>−₹@Model.AdvancePaid.ToString("0.00")</td></tr>
+    <tr class="table-active"><th>Net Amount</th><td><strong>₹@Model.NetAmount.ToString("0.00")</strong></td></tr>
+</table>
+
+<div class="mb-3">
+    @if (Model.Status == SettlementStatus.Draft)
+    {
+        <form asp-action="Recalculate" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-secondary">Recalculate</button>
+        </form>
+        <form asp-action="Generate" asp-route-id="@Model.PaymentID" method="post" class="d-inline" onsubmit="return confirm('Generating will LOCK all collections and feed issues in this period. Continue?');">
+            <button type="submit" class="btn btn-primary">Generate</button>
+        </form>
+        <form asp-action="CancelDraft" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-danger">Cancel Draft</button>
+        </form>
+    }
+    else if (Model.Status == SettlementStatus.Generated)
+    {
+        <form asp-action="MarkPaid" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <button type="submit" class="btn btn-success">Mark as Paid</button>
+        </form>
+        <p class="text-muted mt-2">To correct a generated settlement, an Admin must unlock it (Admin area → Unlock Settlements), which requires a reason and is fully audited.</p>
+    }
+</div>
+
+<a asp-action="Index" class="btn btn-outline-secondary">Back to Settlements</a>

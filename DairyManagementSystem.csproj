@@ -25,6 +25,11 @@
 
     <!-- Config / secrets (Development only, added deliberately not via wildcard) -->
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.0" />
+
+    <!-- PDF report generation — pure managed code, no native wkhtmltopdf-style
+         binary dependency, which keeps deployment simple. Free under the
+         Community license for this project's scale. -->
+    <PackageReference Include="QuestPDF" Version="2024.10.3" />
   </ItemGroup>
 
 </Project>

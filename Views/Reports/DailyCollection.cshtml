@@ -1,0 +1,30 @@
+@model DailyCollectionReportViewModel
+@{
+    ViewData["Title"] = "Daily Collection Report";
+    int? societyId = ViewBag.SocietyId;
+}
+
+<h2 class="mb-4">Daily Milk Collection Report</h2>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <input type="hidden" name="societyId" value="@societyId" />
+    <div class="col-auto">
+        <label class="form-label">Date</label>
+        <input type="date" name="date" value="@Model.ReportDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">View</button>
+        <a href="@Url.Action("DailyCollectionPdf", new { societyId, date = Model.ReportDate.ToString("yyyy-MM-dd") })" class="btn btn-outline-secondary">Download PDF</a>
+    </div>
+</form>
+
+<table class="table table-striped w-auto">
+    <tr><th>Total Quantity</th><td>@Model.TotalQuantity.ToString("0.00") L</td></tr>
+    <tr><th>Total Amount</th><td>₹@Model.TotalAmount.ToString("0.00")</td></tr>
+    <tr><th>Farmer Count</th><td>@Model.FarmerCount</td></tr>
+    <tr><th>Average Fat %</th><td>@Model.AverageFatPercent.ToString("0.00")%</td></tr>
+    <tr><th>Morning</th><td>@Model.MorningQuantity.ToString("0.00") L — ₹@Model.MorningAmount.ToString("0.00")</td></tr>
+    <tr><th>Evening</th><td>@Model.EveningQuantity.ToString("0.00") L — ₹@Model.EveningAmount.ToString("0.00")</td></tr>
+</table>
+
+<a asp-action="Index" asp-route-societyId="@societyId" class="btn btn-outline-secondary">Back to Reports</a>

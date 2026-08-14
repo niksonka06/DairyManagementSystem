@@ -9,6 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// QuestPDF requires an explicit license declaration. Community is free for
+// this project's scale (see QuestPDF's licensing terms) — must be set once
+// before any PDF is generated.
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 // ---------------------------------------------------------------------
 // SERVICE REGISTRATION
 // ---------------------------------------------------------------------
@@ -61,6 +66,10 @@ builder.Services.AddScoped<IMilkRateRepository, MilkRateRepository>();
 builder.Services.AddScoped<IMilkCollectionRepository, MilkCollectionRepository>();
 builder.Services.AddScoped<IFeedInventoryRepository, FeedInventoryRepository>();
 builder.Services.AddScoped<IFeedIssueRepository, FeedIssueRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<ISettlementDeductionRepository, SettlementDeductionRepository>();
+builder.Services.AddScoped<IAdvancePaymentRepository, AdvancePaymentRepository>();
+builder.Services.AddScoped<IDispatchRepository, DispatchRepository>();
 
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ISocietyService, SocietyService>();
@@ -70,6 +79,13 @@ builder.Services.AddScoped<IMilkRateService, MilkRateService>();
 builder.Services.AddScoped<IMilkCollectionService, MilkCollectionService>();
 builder.Services.AddScoped<IFeedInventoryService, FeedInventoryService>();
 builder.Services.AddScoped<IFeedIssueService, FeedIssueService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IAdvancePaymentService, AdvancePaymentService>();
+builder.Services.AddScoped<IDispatchService, DispatchService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
+builder.Services.AddHttpClient("SmsGateway");
+builder.Services.AddScoped<ISmsService, SmsService>();
 
 var app = builder.Build();
 

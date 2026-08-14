@@ -1,0 +1,61 @@
+@model FeedStockReportViewModel
+@{
+    ViewData["Title"] = "Feed Stock Report";
+    int? societyId = ViewBag.SocietyId;
+}
+
+<h2 class="mb-4">Feed Stock Report</h2>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <input type="hidden" name="societyId" value="@societyId" />
+    <div class="col-auto">
+        <label class="form-label">Issues From</label>
+        <input type="date" name="from" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">To</label>
+        <input type="date" name="to" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">View</button>
+        <a href="@Url.Action("FeedStockPdf", new { societyId, from = Model.FromDate.ToString("yyyy-MM-dd"), to = Model.ToDate.ToString("yyyy-MM-dd") })" class="btn btn-outline-secondary">Download PDF</a>
+    </div>
+</form>
+
+<h5>Current Stock</h5>
+<table class="table table-striped table-hover mb-4">
+    <thead><tr><th>Type</th><th>Name</th><th>Unit</th><th>Stock</th><th>Price/Unit</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model.CurrentStock)
+        {
+            <tr class="@(r.IsLowStock ? "table-warning" : "")">
+                <td>@r.ItemType</td>
+                <td>@r.FeedName</td>
+                <td>@r.Unit</td>
+                <td>@r.StockQuantity.ToString("0.00") @(r.IsLowStock ? "(LOW)" : "")</td>
+                <td>₹@r.PricePerUnit.ToString("0.00")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h5>Farmer-wise Deduction Totals (for period above)</h5>
+<table class="table table-striped table-hover mb-4">
+    <thead><tr><th>Farmer</th><th>Feed Cost</th><th>Medicine Cost</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model.FarmerDeductionTotals)
+        {
+            <tr>
+                <td>@r.FarmerCode — @r.FarmerName</td>
+                <td>₹@r.TotalFeedCost.ToString("0.00")</td>
+                <td>₹@r.TotalMedicineCost.ToString("0.00")</td>
+            </tr>
+        }
+        @if (!Model.FarmerDeductionTotals.Any())
+        {
+            <tr><td colspan="3" class="text-center text-muted">No issues in this period.</td></tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="Index" asp-route-societyId="@societyId" class="btn btn-outline-secondary">Back to Reports</a>

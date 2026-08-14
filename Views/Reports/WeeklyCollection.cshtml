@@ -1,0 +1,48 @@
+@model WeeklyCollectionSummaryViewModel
+@{
+    ViewData["Title"] = "Weekly Collection Summary";
+    int? societyId = ViewBag.SocietyId;
+}
+
+<h2 class="mb-1">Weekly Collection Summary</h2>
+<p class="text-muted">@Model.PeriodStart.ToString("dd-MMM-yyyy") to @Model.PeriodEnd.ToString("dd-MMM-yyyy")</p>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <input type="hidden" name="societyId" value="@societyId" />
+    <div class="col-auto">
+        <label class="form-label">Any date within the week</label>
+        <input type="date" name="date" value="@Model.WeekReferenceDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">View</button>
+        <a href="@Url.Action("WeeklyCollectionPdf", new { societyId, date = Model.WeekReferenceDate.ToString("yyyy-MM-dd") })" class="btn btn-outline-secondary">Download PDF</a>
+    </div>
+</form>
+
+<table class="table table-striped table-hover">
+    <thead><tr><th>Farmer Code</th><th>Name</th><th>Total Qty (L)</th><th>Avg Fat %</th><th>Gross Amount</th></tr></thead>
+    <tbody>
+        @foreach (var r in Model.Rows)
+        {
+            <tr>
+                <td>@r.FarmerCode</td>
+                <td>@r.FarmerName</td>
+                <td>@r.TotalQuantity.ToString("0.00")</td>
+                <td>@r.AverageFat.ToString("0.00")</td>
+                <td>₹@r.GrossAmount.ToString("0.00")</td>
+            </tr>
+        }
+        @if (!Model.Rows.Any())
+        {
+            <tr><td colspan="5" class="text-center text-muted">No collections in this period.</td></tr>
+        }
+    </tbody>
+    @if (Model.Rows.Any())
+    {
+        <tfoot>
+            <tr class="table-active"><th colspan="4">Total</th><th>₹@Model.Rows.Sum(r => r.GrossAmount).ToString("0.00")</th></tr>
+        </tfoot>
+    }
+</table>
+
+<a asp-action="Index" asp-route-societyId="@societyId" class="btn btn-outline-secondary">Back to Reports</a>
