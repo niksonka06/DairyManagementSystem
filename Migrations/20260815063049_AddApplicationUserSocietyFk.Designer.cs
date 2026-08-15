@@ -4,6 +4,7 @@ using DairyManagementSystem.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DairyManagementSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260815063049_AddApplicationUserSocietyFk")]
+    partial class AddApplicationUserSocietyFk
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,8 +150,6 @@ namespace DairyManagementSystem.Migrations
                         .IsUnique()
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.HasIndex("SocietyID");
 
                     b.ToTable("AspNetUsers", (string)null);
                 });
@@ -1056,16 +1057,6 @@ namespace DairyManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Payment");
-                });
-
-            modelBuilder.Entity("DairyManagementSystem.Models.Entities.ApplicationUser", b =>
-                {
-                    b.HasOne("DairyManagementSystem.Models.Entities.Society", "Society")
-                        .WithMany()
-                        .HasForeignKey("SocietyID")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Society");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>

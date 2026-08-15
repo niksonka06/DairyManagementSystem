@@ -1,9 +1,11 @@
+using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
 using DairyManagementSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace DairyManagementSystem.Controllers
 {
@@ -11,11 +13,19 @@ namespace DairyManagementSystem.Controllers
     {
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISocietyRepository _societyRepository;
+        private readonly IFarmerRepository _farmerRepository;
 
-        public AccountController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
+        public AccountController(
+            SignInManager<ApplicationUser> signInManager,
+            UserManager<ApplicationUser> userManager,
+            ISocietyRepository societyRepository,
+            IFarmerRepository farmerRepository)
         {
             _signInManager = signInManager;
             _userManager = userManager;
+            _societyRepository = societyRepository;
+            _farmerRepository = farmerRepository;
         }
 
         [HttpGet]
@@ -26,6 +36,7 @@ namespace DairyManagementSystem.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -52,6 +63,14 @@ namespace DairyManagementSystem.Controllers
             if (!result.Succeeded)
             {
                 ModelState.AddModelError(string.Empty, genericError);
+                return View(model);
+            }
+
+            var societyBlockMessage = await GetSocietyAccessBlockMessageAsync(user);
+            if (societyBlockMessage is not null)
+            {
+                await _signInManager.SignOutAsync();
+                ModelState.AddModelError(string.Empty, societyBlockMessage);
                 return View(model);
             }
 
@@ -82,6 +101,7 @@ namespace DairyManagementSystem.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
+        [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
             if (!ModelState.IsValid)
@@ -120,6 +140,38 @@ namespace DairyManagementSystem.Controllers
             return View();
         }
 
+        private async Task<string?> GetSocietyAccessBlockMessageAsync(ApplicationUser user)
+        {
+            if (await _userManager.IsInRoleAsync(user, Roles.Operator))
+            {
+                if (!user.SocietyID.HasValue)
+                {
+                    return "Your operator account is not assigned to a society. Contact an Admin.";
+                }
+
+                var society = await _societyRepository.GetByIdAsync(user.SocietyID.Value);
+                if (society is null || !society.IsActive)
+                {
+                    return "Your society is not active. Contact the system administrator.";
+                }
+            }
+
+            if (await _userManager.IsInRoleAsync(user, Roles.Farmer))
+            {
+                var farmer = await _farmerRepository.GetByUserIdAsync(user.Id);
+                if (farmer is not null)
+                {
+                    var society = await _societyRepository.GetByIdAsync(farmer.SocietyID);
+                    if (society is null || !society.IsActive)
+                    {
+                        return "Your society is not active. Contact your society operator.";
+                    }
+                }
+            }
+
+            return null;
+        }
+
         // Centralizes the "where does this user land after login" decision.
         // Never trusts an external returnUrl blindly (open-redirect protection
         // via Url.IsLocalUrl) — an attacker could otherwise craft a login link
@@ -131,11 +183,6 @@ namespace DairyManagementSystem.Controllers
                 return Redirect(returnUrl);
             }
 
-            // Role-based landing pages point at each Area's Home controller.
-            // These controllers don't exist yet — they arrive with each
-            // Area's own module (Stage 4 Admin/Society, Stage 7 Operator
-            // collection screens, Stage 13 Farmer portal). Until then this
-            // will 404 for non-Admins, which is expected at this stage.
             if (User.IsInRole(Roles.Admin)) return RedirectToAction("Index", "Home", new { area = "Admin" });
             if (User.IsInRole(Roles.Operator)) return RedirectToAction("Index", "Home", new { area = "Operator" });
             if (User.IsInRole(Roles.Farmer)) return RedirectToAction("Index", "Home", new { area = "Farmer" });

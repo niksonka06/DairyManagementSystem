@@ -10,17 +10,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class MilkRateController : Controller
+    public class MilkRateController : OperatorControllerBase
     {
         private readonly IMilkRateService _milkRateService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public MilkRateController(IMilkRateService milkRateService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _milkRateService = milkRateService;
-            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -126,14 +123,15 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleActive(int id, bool activate, CancellationToken ct)
+        public async Task<IActionResult> ToggleActive(int id, string activate, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
+            var shouldActivate = FormBindingHelpers.ParseBoolFormValue(activate);
 
             try
             {
-                await _milkRateService.SetActiveStatusAsync(id, societyId, activate, CurrentUserId(), ct);
-                TempData["Success"] = activate ? "Rate activated." : "Rate deactivated.";
+                await _milkRateService.SetActiveStatusAsync(id, societyId, shouldActivate, CurrentUserId(), ct);
+                TempData["Success"] = shouldActivate ? "Rate activated." : "Rate deactivated.";
             }
             catch (BusinessRuleException ex)
             {
@@ -141,22 +139,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

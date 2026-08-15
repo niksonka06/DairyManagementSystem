@@ -10,9 +10,8 @@ namespace DairyManagementSystem.Models.Entities
         public string FullName { get; set; } = string.Empty;
 
         // Nullable: Admin may be unscoped (not tied to one society).
-        // FK constraint to Societies is added properly once Stage 4 creates
-        // that table — for now this is just a plain nullable int column.
         public int? SocietyID { get; set; }
+        public Society? Society { get; set; }
 
         public bool IsActive { get; set; } = true;
 

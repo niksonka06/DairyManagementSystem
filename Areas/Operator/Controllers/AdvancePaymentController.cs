@@ -9,19 +9,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class AdvancePaymentController : Controller
+    public class AdvancePaymentController : OperatorControllerBase
     {
         private readonly IAdvancePaymentService _advancePaymentService;
         private readonly IFarmerService _farmerService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public AdvancePaymentController(IAdvancePaymentService advancePaymentService, IFarmerService farmerService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _advancePaymentService = advancePaymentService;
             _farmerService = farmerService;
-            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -88,22 +85,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerCode = f.FarmerCode,
                 FullName = f.FullName
             }).ToList();
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

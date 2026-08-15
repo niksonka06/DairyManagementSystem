@@ -17,5 +17,9 @@ namespace DairyManagementSystem.Interfaces
         // Admin-only, cross-society — see SettlementUnlockController.
         Task<List<Payment>> GetGeneratedAcrossAllSocietiesAsync(CancellationToken ct = default);
         Task CancelGeneratedAsync(int paymentId, int performedByUserId, string reason, CancellationToken ct = default);
+
+        // Farmer Portal
+        Task<List<Payment>> GetByFarmerAsync(int farmerId, CancellationToken ct = default);
+        Task<Payment?> GetByIdForFarmerAsync(int paymentId, int farmerId, CancellationToken ct = default);
     }
 }

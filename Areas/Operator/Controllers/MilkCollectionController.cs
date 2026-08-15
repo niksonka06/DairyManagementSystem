@@ -10,19 +10,16 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class MilkCollectionController : Controller
+    public class MilkCollectionController : OperatorControllerBase
     {
         private readonly IMilkCollectionService _collectionService;
         private readonly IFarmerService _farmerService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public MilkCollectionController(IMilkCollectionService collectionService, IFarmerService farmerService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _collectionService = collectionService;
             _farmerService = farmerService;
-            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
@@ -164,22 +161,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerCode = f.FarmerCode,
                 FullName = f.FullName
             }).ToList();
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

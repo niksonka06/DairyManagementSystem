@@ -38,6 +38,11 @@ namespace DairyManagementSystem.Services
             return await _collectionRepository.GetByIdWithinSocietyAsync(collectionId, societyId, ct);
         }
 
+        public async Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            return await _collectionRepository.GetByFarmerAndDateRangeAsync(farmerId, from, to, ct);
+        }
+
         public async Task<MilkCollection> CreateAsync(MilkCollectionFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             var collectionDate = model.CollectionDate.Date;
@@ -58,6 +63,11 @@ namespace DairyManagementSystem.Services
             if (farmer is null || farmer.SocietyID != model.SocietyID)
             {
                 throw new BusinessRuleException("Selected farmer does not belong to this society.");
+            }
+
+            if (!farmer.IsActive)
+            {
+                throw new BusinessRuleException("Selected farmer is inactive and cannot receive new collections.");
             }
 
             var existing = await _collectionRepository.GetByFarmerDateShiftAsync(
@@ -120,6 +130,12 @@ namespace DairyManagementSystem.Services
                 // read-only for everyone except an Admin unlock (Stage 10).
                 throw new BusinessRuleException(
                     "This collection is locked because it's part of a generated settlement and cannot be edited. Contact an Admin to unlock it if a correction is truly needed.");
+            }
+
+            var farmer = await _farmerRepository.GetByIdAsync(collection.FarmerID, ct);
+            if (farmer is null || !farmer.IsActive)
+            {
+                throw new BusinessRuleException("This farmer is inactive and their collections cannot be edited.");
             }
 
             var collectionDate = model.CollectionDate.Date;

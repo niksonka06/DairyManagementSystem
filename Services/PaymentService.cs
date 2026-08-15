@@ -58,6 +58,11 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException("Selected farmer does not belong to this society.");
             }
 
+            if (!farmer.IsActive)
+            {
+                throw new BusinessRuleException("Selected farmer is inactive and cannot have a settlement created.");
+            }
+
             var (periodStart, periodEnd) = DateHelpers.ComputeWeek(model.WeekReferenceDate);
 
             if (await _paymentRepository.ExistsNonCancelledForPeriodAsync(model.FarmerID, periodStart, excludingPaymentId: null, ct))
@@ -262,6 +267,16 @@ namespace DairyManagementSystem.Services
         public async Task<List<Payment>> GetGeneratedAcrossAllSocietiesAsync(CancellationToken ct = default)
         {
             return await _paymentRepository.GetGeneratedAcrossAllSocietiesAsync(ct);
+        }
+
+        public async Task<List<Payment>> GetByFarmerAsync(int farmerId, CancellationToken ct = default)
+        {
+            return await _paymentRepository.GetByFarmerAsync(farmerId, ct);
+        }
+
+        public async Task<Payment?> GetByIdForFarmerAsync(int paymentId, int farmerId, CancellationToken ct = default)
+        {
+            return await _paymentRepository.GetByIdForFarmerAsync(paymentId, farmerId, ct);
         }
 
         public async Task CancelGeneratedAsync(int paymentId, int performedByUserId, string reason, CancellationToken ct = default)

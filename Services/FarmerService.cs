@@ -36,6 +36,11 @@ namespace DairyManagementSystem.Services
             return await _farmerRepository.GetByIdWithinSocietyAsync(farmerId, societyId, ct);
         }
 
+        public async Task<Farmer?> GetByUserIdAsync(int userId, CancellationToken ct = default)
+        {
+            return await _farmerRepository.GetByUserIdAsync(userId, ct);
+        }
+
         public async Task<FarmerCredentialsViewModel> CreateAsync(FarmerFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             var farmerCode = model.FarmerCode.Trim();
@@ -45,14 +50,12 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException($"Farmer code '{farmerCode}' is already used in this society.");
             }
 
-            // Synthetic login identity — farmers don't have real email
-            // addresses, but Identity (and the synopsis's Users.Email UNIQUE
-            // constraint) needs an email-shaped, unique value. FarmerCode is
-            // already unique per society and human-readable, so it's a
-            // natural fit. Prefixed with SocietyID to guarantee global
-            // uniqueness across societies too (FarmerCode is only unique
-            // WITHIN a society, not system-wide).
-            var loginEmail = $"soc{model.SocietyID}-{farmerCode}@dairysystem.local".ToLowerInvariant();
+            var loginEmail = model.Email.Trim().ToLowerInvariant();
+            if (await _userManager.FindByEmailAsync(loginEmail) is not null)
+            {
+                throw new BusinessRuleException($"Email '{loginEmail}' is already registered.");
+            }
+
             var temporaryPassword = TemporaryPasswordGenerator.Generate();
 
             // Two things must succeed together: the Identity login account
@@ -105,7 +108,7 @@ namespace DairyManagementSystem.Services
 
                 _auditService.Log(nameof(Farmer), farmer.FarmerID, AuditAction.Created,
                     oldValue: null,
-                    newValue: new { farmer.FarmerCode, farmer.FullName, farmer.Phone, farmer.SocietyID },
+                    newValue: new { farmer.FarmerCode, farmer.FullName, farmer.Phone, farmer.SocietyID, LoginEmail = loginEmail },
                     performedByUserId);
 
                 await _unitOfWork.SaveChangesAsync(ct); // persists the audit row
@@ -139,7 +142,28 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException($"Farmer code '{farmerCode}' is already used in this society.");
             }
 
-            var oldSnapshot = new { farmer.FarmerCode, farmer.FullName, farmer.Phone, farmer.BankAccountNo, farmer.BankName, farmer.IFSC };
+            var loginEmail = model.Email.Trim().ToLowerInvariant();
+            if (farmer.User is null)
+            {
+                throw new BusinessRuleException("Farmer login account is missing.");
+            }
+
+            var existingWithEmail = await _userManager.FindByEmailAsync(loginEmail);
+            if (existingWithEmail is not null && existingWithEmail.Id != farmer.UserID)
+            {
+                throw new BusinessRuleException($"Email '{loginEmail}' is already registered.");
+            }
+
+            var oldSnapshot = new
+            {
+                farmer.FarmerCode,
+                farmer.FullName,
+                farmer.Phone,
+                farmer.BankAccountNo,
+                farmer.BankName,
+                farmer.IFSC,
+                LoginEmail = farmer.User.Email
+            };
 
             farmer.FarmerCode = farmerCode;
             farmer.FullName = model.FullName.Trim();
@@ -149,10 +173,27 @@ namespace DairyManagementSystem.Services
             farmer.BankName = model.BankName.Trim();
             farmer.IFSC = model.IFSC.Trim().ToUpperInvariant();
 
+            if (!string.Equals(farmer.User.Email, loginEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                farmer.User.Email = loginEmail;
+                farmer.User.UserName = loginEmail;
+                farmer.User.NormalizedEmail = _userManager.NormalizeEmail(loginEmail);
+                farmer.User.NormalizedUserName = _userManager.NormalizeName(loginEmail);
+            }
+
             _farmerRepository.SetOriginalRowVersion(farmer, model.RowVersion!);
 
             _auditService.Log(nameof(Farmer), farmer.FarmerID, AuditAction.Updated, oldSnapshot,
-                new { farmer.FarmerCode, farmer.FullName, farmer.Phone, farmer.BankAccountNo, farmer.BankName, farmer.IFSC },
+                new
+                {
+                    farmer.FarmerCode,
+                    farmer.FullName,
+                    farmer.Phone,
+                    farmer.BankAccountNo,
+                    farmer.BankName,
+                    farmer.IFSC,
+                    LoginEmail = loginEmail
+                },
                 performedByUserId);
 
             await _unitOfWork.SaveChangesAsync(ct);

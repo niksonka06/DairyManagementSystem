@@ -1,5 +1,4 @@
 using DairyManagementSystem.Models.Entities;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +34,11 @@ namespace DairyManagementSystem.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.Property(u => u.FullName).HasMaxLength(100).IsRequired();
+
+                entity.HasOne(u => u.Society)
+                    .WithMany()
+                    .HasForeignKey(u => u.SocietyID)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             builder.Entity<Society>(entity =>

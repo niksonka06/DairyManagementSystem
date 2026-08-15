@@ -33,6 +33,11 @@ namespace DairyManagementSystem.Services
             return await _feedIssueRepository.GetBySocietyAsync(societyId, ct);
         }
 
+        public async Task<List<FeedIssue>> GetByFarmerAsync(int farmerId, int societyId, CancellationToken ct = default)
+        {
+            return await _feedIssueRepository.GetByFarmerAsync(farmerId, societyId, ct);
+        }
+
         public async Task<FeedIssue> IssueToFarmerAsync(FeedIssueFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             // Ownership checks — never trust that a posted FeedItemID/FarmerID
@@ -49,6 +54,11 @@ namespace DairyManagementSystem.Services
             if (farmer is null || farmer.SocietyID != model.SocietyID)
             {
                 throw new BusinessRuleException("Selected farmer does not belong to this society.");
+            }
+
+            if (!farmer.IsActive)
+            {
+                throw new BusinessRuleException("Selected farmer is inactive and cannot receive feed or medicine issues.");
             }
 
             // ── The synopsis's exact atomic sequence ──────────────────────

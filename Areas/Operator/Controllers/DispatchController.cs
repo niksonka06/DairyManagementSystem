@@ -10,17 +10,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class DispatchController : Controller
+    public class DispatchController : OperatorControllerBase
     {
         private readonly IDispatchService _dispatchService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public DispatchController(IDispatchService dispatchService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _dispatchService = dispatchService;
-            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -131,22 +128,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                     "This dispatch record was modified by someone else while you were editing it. Please reload and try again.");
                 return View(model);
             }
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

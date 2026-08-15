@@ -7,6 +7,7 @@ namespace DairyManagementSystem.Interfaces
     {
         Task<List<MilkCollection>> GetBySocietyAndDateAsync(int societyId, DateTime date, CancellationToken ct = default);
         Task<MilkCollection?> GetByIdWithinSocietyAsync(int collectionId, int societyId, CancellationToken ct = default);
+        Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default);
         Task<MilkCollection> CreateAsync(MilkCollectionFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task UpdateAsync(MilkCollectionFormViewModel model, int performedByUserId, CancellationToken ct = default);
     }
