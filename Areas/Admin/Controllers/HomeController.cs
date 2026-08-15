@@ -1,3 +1,4 @@
+using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,9 +9,17 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
     [Authorize(Roles = Roles.Admin)]
     public class HomeController : Controller
     {
-        public IActionResult Index()
+        private readonly IAdminDashboardService _adminDashboardService;
+
+        public HomeController(IAdminDashboardService adminDashboardService)
         {
-            return View();
+            _adminDashboardService = adminDashboardService;
+        }
+
+        public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
+        {
+            var model = await _adminDashboardService.GetUnionDashboardAsync(date, ct);
+            return View(model);
         }
     }
 }

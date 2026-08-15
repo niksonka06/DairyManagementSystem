@@ -1,0 +1,202 @@
+@model SocietyOverviewViewModel
+@{
+    ViewData["Title"] = Model.SocietyName;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">@Model.SocietyName</h2>
+        <p class="text-muted mb-0">Society overview for @Model.OverviewDate.ToString("dd-MMM-yyyy")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-secondary">Back to Societies</a>
+        <a asp-action="Edit" asp-route-id="@Model.SocietyID" class="btn btn-outline-primary">Edit</a>
+        <a asp-area="" asp-controller="Reports" asp-action="Index" asp-route-societyId="@Model.SocietyID" class="btn btn-primary">View Reports</a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Milk collected today</div>
+                <div class="fs-3 fw-semibold">@Model.TodayMilkLitres.ToString("0.00") L</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Payable today</div>
+                <div class="fs-3 fw-semibold">₹@Model.TodayPayable.ToString("0.00")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Member farmers</div>
+                <div class="fs-3 fw-semibold">@Model.ActiveFarmerCount</div>
+                <div class="small text-muted">@Model.TotalFarmerCount total registered</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Generated settlements</div>
+                <div class="fs-3 fw-semibold">₹@Model.PendingSettlementsAmount.ToString("0.00")</div>
+                <div class="small text-muted">@Model.PendingSettlementsCount pending</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Society profile</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Registration</dt>
+                    <dd class="col-sm-8">@Model.RegistrationNo</dd>
+                    <dt class="col-sm-4">Phone</dt>
+                    <dd class="col-sm-8">@Model.ContactPhone</dd>
+                    <dt class="col-sm-4">Address</dt>
+                    <dd class="col-sm-8">@Model.Address</dd>
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Last 7 days — collection trend</div>
+            <div class="card-body">
+                <canvas id="societyTrendChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Today's shifts</div>
+            <div class="card-body">
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <div class="border rounded p-3">
+                            <div class="fs-4 fw-semibold">@Model.MorningEntries</div>
+                            <div class="text-muted">Morning entries</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border rounded p-3">
+                            <div class="fs-4 fw-semibold">@Model.EveningEntries</div>
+                            <div class="text-muted">Evening entries</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Quick links</div>
+            <div class="card-body d-flex flex-wrap gap-2">
+                <a asp-area="" asp-controller="Reports" asp-action="DailyCollection" asp-route-societyId="@Model.SocietyID" class="btn btn-outline-primary btn-sm">Daily Collection</a>
+                <a asp-area="" asp-controller="Reports" asp-action="WeeklyCollection" asp-route-societyId="@Model.SocietyID" class="btn btn-outline-primary btn-sm">Weekly Summary</a>
+                <a asp-area="" asp-controller="Reports" asp-action="FarmerSettlement" asp-route-societyId="@Model.SocietyID" class="btn btn-outline-primary btn-sm">Settlements</a>
+                <a asp-area="" asp-controller="Reports" asp-action="Dispatch" asp-route-societyId="@Model.SocietyID" class="btn btn-outline-primary btn-sm">Dispatch</a>
+                <a asp-area="" asp-controller="Reports" asp-action="TopSuppliers" asp-route-societyId="@Model.SocietyID" class="btn btn-outline-primary btn-sm">Top Suppliers</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h5 class="mb-3">Operators for this society</h5>
+<div class="table-responsive mb-4">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var op in Model.Operators)
+            {
+                <tr>
+                    <td>@op.FullName</td>
+                    <td>@op.Email</td>
+                    <td>
+                        @if (op.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a asp-controller="User" asp-action="EditOperator" asp-route-id="@op.UserId" class="btn btn-sm btn-outline-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Operators.Any())
+            {
+                <tr><td colspan="4" class="text-center text-muted">No operators assigned yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex gap-2">
+    <a asp-controller="User" asp-action="CreateOperator" class="btn btn-primary">Add Operator</a>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const trendLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendLabels));
+        const trendValues = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendValues));
+
+        new Chart(document.getElementById('societyTrendChart'), {
+            type: 'line',
+            data: {
+                labels: trendLabels,
+                datasets: [{
+                    label: 'Litres',
+                    data: trendValues,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    </script>
+}
