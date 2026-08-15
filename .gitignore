@@ -1,6 +1,7 @@
 ## Build results
 bin/
 obj/
+_build_verify/
 
 ## Visual Studio
 .vs/
