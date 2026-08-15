@@ -70,5 +70,14 @@ namespace DairyManagementSystem.Repositories
                 .Where(c => c.SocietyID == societyId && c.CollectionDate >= from.Date && c.CollectionDate <= to.Date)
                 .ToListAsync(ct);
         }
+
+        public async Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Where(c => c.FarmerID == farmerId && c.CollectionDate >= from.Date && c.CollectionDate <= to.Date)
+                .OrderByDescending(c => c.CollectionDate)
+                .ThenBy(c => c.Shift)
+                .ToListAsync(ct);
+        }
     }
 }

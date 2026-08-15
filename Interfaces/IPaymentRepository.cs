@@ -22,5 +22,11 @@ namespace DairyManagementSystem.Interfaces
         // "unlock requires reason" requirement) — Admin isn't scoped to one
         // society like an Operator is.
         Task<List<Payment>> GetGeneratedAcrossAllSocietiesAsync(CancellationToken ct = default);
+
+        // Farmer Portal — own settlement history and a single settlement's
+        // details, both scoped by FarmerID so a farmer can never view (let
+        // alone guess the ID of) another farmer's settlement.
+        Task<List<Payment>> GetByFarmerAsync(int farmerId, CancellationToken ct = default);
+        Task<Payment?> GetByIdForFarmerAsync(int paymentId, int farmerId, CancellationToken ct = default);
     }
 }

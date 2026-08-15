@@ -34,5 +34,10 @@ namespace DairyManagementSystem.Repositories
                 .Include(f => f.User)
                 .FirstOrDefaultAsync(f => f.FarmerID == farmerId && f.SocietyID == societyId, ct);
         }
+
+        public async Task<Farmer?> GetByUserIdAsync(int userId, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking().FirstOrDefaultAsync(f => f.UserID == userId, ct);
+        }
     }
 }

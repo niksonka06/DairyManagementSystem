@@ -59,5 +59,20 @@ namespace DairyManagementSystem.Repositories
                 .OrderByDescending(p => p.GeneratedAt)
                 .ToListAsync(ct);
         }
+
+        public async Task<List<Payment>> GetByFarmerAsync(int farmerId, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Where(p => p.FarmerID == farmerId)
+                .OrderByDescending(p => p.PeriodStart)
+                .ToListAsync(ct);
+        }
+
+        public async Task<Payment?> GetByIdForFarmerAsync(int paymentId, int farmerId, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Include(p => p.Deductions)
+                .FirstOrDefaultAsync(p => p.PaymentID == paymentId && p.FarmerID == farmerId, ct);
+        }
     }
 }
