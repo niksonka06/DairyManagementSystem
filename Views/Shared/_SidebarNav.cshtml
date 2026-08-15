@@ -1,0 +1,113 @@
+@{
+    var area = ViewContext.RouteData.Values["area"]?.ToString() ?? "";
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string RoleLabel() => User.IsInRole("Admin") ? "ADMINISTRATOR"
+        : User.IsInRole("Operator") ? "OPERATOR" : "FARMER";
+
+    bool IsActive(string navArea, string navController, string? navAction = null)
+    {
+        if (!string.Equals(area, navArea, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (!string.Equals(controller, navController, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return navAction is null
+            || string.Equals(action, navAction, StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+<aside class="app-sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+        <div class="sidebar-logo"><i class="bi bi-droplet-half"></i></div>
+        <div>
+            <div class="sidebar-brand-title">Smart Dairy</div>
+            <div class="sidebar-brand-sub">Cooperative Suite</div>
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        @if (User.IsInRole("Admin"))
+        {
+            <a class="sidebar-link @(IsActive("Admin", "Home") ? "active" : "")" asp-area="Admin" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Admin", "Society") ? "active" : "")" asp-area="Admin" asp-controller="Society" asp-action="Index">
+                <i class="bi bi-building"></i><span>Societies</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Admin", "User") ? "active" : "")" asp-area="Admin" asp-controller="User" asp-action="Index">
+                <i class="bi bi-person-badge"></i><span>Operators</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Admin", "SettlementUnlock") ? "active" : "")" asp-area="Admin" asp-controller="SettlementUnlock" asp-action="Index">
+                <i class="bi bi-unlock"></i><span>Unlock Settlements</span>
+            </a>
+            <a class="sidebar-link @(IsActive("", "Reports") ? "active" : "")" asp-area="" asp-controller="Reports" asp-action="Index">
+                <i class="bi bi-bar-chart-line"></i><span>Reports</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Admin", "AuditLog") ? "active" : "")" asp-area="Admin" asp-controller="AuditLog" asp-action="Index">
+                <i class="bi bi-journal-text"></i><span>Audit Log</span>
+            </a>
+        }
+        else if (User.IsInRole("Operator"))
+        {
+            <a class="sidebar-link @(IsActive("Operator", "Home") ? "active" : "")" asp-area="Operator" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "MilkCollection") ? "active" : "")" asp-area="Operator" asp-controller="MilkCollection" asp-action="Index">
+                <i class="bi bi-cup-straw"></i><span>Collection</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "Farmer") ? "active" : "")" asp-area="Operator" asp-controller="Farmer" asp-action="Index">
+                <i class="bi bi-people"></i><span>Farmers</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "MilkRate") ? "active" : "")" asp-area="Operator" asp-controller="MilkRate" asp-action="Index">
+                <i class="bi bi-currency-rupee"></i><span>Rate Chart</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "FeedInventory") || IsActive("Operator", "FeedIssue") ? "active" : "")" asp-area="Operator" asp-controller="FeedInventory" asp-action="Index">
+                <i class="bi bi-basket"></i><span>Feed</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "Settlement") ? "active" : "")" asp-area="Operator" asp-controller="Settlement" asp-action="Index">
+                <i class="bi bi-receipt"></i><span>Settlements</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "Dispatch") ? "active" : "")" asp-area="Operator" asp-controller="Dispatch" asp-action="Index">
+                <i class="bi bi-truck"></i><span>Dispatch</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Operator", "AdvancePayment") ? "active" : "")" asp-area="Operator" asp-controller="AdvancePayment" asp-action="Index">
+                <i class="bi bi-cash-stack"></i><span>Advances</span>
+            </a>
+            <a class="sidebar-link @(IsActive("", "Reports") ? "active" : "")" asp-area="" asp-controller="Reports" asp-action="Index">
+                <i class="bi bi-bar-chart-line"></i><span>Reports</span>
+            </a>
+        }
+        else if (User.IsInRole("Farmer"))
+        {
+            <a class="sidebar-link @(IsActive("Farmer", "Home") ? "active" : "")" asp-area="Farmer" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Farmer", "Collections") ? "active" : "")" asp-area="Farmer" asp-controller="Collections" asp-action="Index">
+                <i class="bi bi-cup-straw"></i><span>My Milk Records</span>
+            </a>
+            <a class="sidebar-link @(IsActive("Farmer", "Settlements") ? "active" : "")" asp-area="Farmer" asp-controller="Settlements" asp-action="Index">
+                <i class="bi bi-receipt"></i><span>My Settlements</span>
+            </a>
+            <a class="sidebar-link @(IsActive("", "Account", "ChangePassword") ? "active" : "")" asp-area="" asp-controller="Account" asp-action="ChangePassword">
+                <i class="bi bi-shield-lock"></i><span>Change Password</span>
+            </a>
+        }
+    </nav>
+
+    <div class="sidebar-user">
+        <div class="sidebar-user-email">@User.Identity?.Name</div>
+        <div class="sidebar-user-role">@RoleLabel()</div>
+        <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+            <button type="submit" class="btn btn-sidebar-signout w-100">
+                <i class="bi bi-box-arrow-right"></i> Sign out
+            </button>
+        </form>
+    </div>
+</aside>
