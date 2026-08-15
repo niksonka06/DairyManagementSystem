@@ -15,11 +15,19 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
     public class SocietyController : Controller
     {
         private readonly ISocietyService _societyService;
+        private readonly IUserManagementService _userManagementService;
+        private readonly IAdminDashboardService _adminDashboardService;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public SocietyController(ISocietyService societyService, UserManager<ApplicationUser> userManager)
+        public SocietyController(
+            ISocietyService societyService,
+            IUserManagementService userManagementService,
+            IAdminDashboardService adminDashboardService,
+            UserManager<ApplicationUser> userManager)
         {
             _societyService = societyService;
+            _userManagementService = userManagementService;
+            _adminDashboardService = adminDashboardService;
             _userManager = userManager;
         }
 
@@ -40,9 +48,91 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> Details(int id, DateTime? date, CancellationToken ct)
+        {
+            var model = await _adminDashboardService.GetSocietyOverviewAsync(id, date, ct);
+            if (model is null)
+            {
+                return NotFound();
+            }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public IActionResult Setup()
+        {
+            return View(new SocietySetupViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Setup(SocietySetupViewModel model, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            if (model.CreateOperator)
+            {
+                var email = model.OperatorEmail!.Trim();
+                var existingOperator = await _userManager.FindByEmailAsync(email);
+                if (existingOperator is not null)
+                {
+                    ModelState.AddModelError(nameof(model.OperatorEmail), $"Email '{email}' is already registered.");
+                    return View(model);
+                }
+            }
+
+            try
+            {
+                var society = await _societyService.CreateAsync(model.ToSocietyForm(), CurrentUserId(), ct);
+
+                if (!model.CreateOperator)
+                {
+                    TempData["Success"] = $"Society '{society.SocietyName}' created successfully.";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                var operatorModel = new OperatorFormViewModel
+                {
+                    FullName = model.OperatorFullName!.Trim(),
+                    Email = model.OperatorEmail!.Trim(),
+                    SocietyID = society.SocietyID
+                };
+
+                var credentials = await _userManagementService.CreateOperatorAsync(operatorModel, CurrentUserId(), ct);
+
+                return View("SetupResult", new SocietySetupResultViewModel
+                {
+                    SocietyName = society.SocietyName,
+                    OperatorCredentials = credentials
+                });
+            }
+            catch (BusinessRuleException ex)
+            {
+                if (ex.Message.Contains("Registration number", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.RegistrationNo), ex.Message);
+                }
+                else if (ex.Message.Contains("Email", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.OperatorEmail), ex.Message);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                }
+
+                return View(model);
+            }
+        }
+
+        [HttpGet]
         public IActionResult Create()
         {
-            return View(new SocietyFormViewModel());
+            return RedirectToAction(nameof(Setup));
         }
 
         [HttpPost]
@@ -125,12 +215,14 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleActive(int id, bool activate, CancellationToken ct)
+        public async Task<IActionResult> ToggleActive(int id, string activate, CancellationToken ct)
         {
+            var shouldActivate = FormBindingHelpers.ParseBoolFormValue(activate);
+
             try
             {
-                await _societyService.SetActiveStatusAsync(id, activate, CurrentUserId(), ct);
-                TempData["Success"] = activate ? "Society activated." : "Society deactivated.";
+                await _societyService.SetActiveStatusAsync(id, shouldActivate, CurrentUserId(), ct);
+                TempData["Success"] = shouldActivate ? "Society activated." : "Society deactivated.";
             }
             catch (BusinessRuleException ex)
             {

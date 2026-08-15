@@ -17,6 +17,12 @@ namespace DairyManagementSystem.Models.ViewModels
         public string FullName { get; set; } = string.Empty;
 
         [Required]
+        [EmailAddress]
+        [StringLength(255)]
+        [Display(Name = "Login Email")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
         [Phone]
         [StringLength(15)]
         public string Phone { get; set; } = string.Empty;

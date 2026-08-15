@@ -10,17 +10,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class FarmerController : Controller
+    public class FarmerController : OperatorControllerBase
     {
         private readonly IFarmerService _farmerService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public FarmerController(IFarmerService farmerService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _farmerService = farmerService;
-            _userManager = userManager;
         }
 
         public async Task<IActionResult> Index(CancellationToken ct)
@@ -66,7 +63,18 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
             catch (BusinessRuleException ex)
             {
-                ModelState.AddModelError(nameof(model.FarmerCode), ex.Message);
+                if (ex.Message.Contains("Email", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.Email), ex.Message);
+                }
+                else if (ex.Message.Contains("Farmer code", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.FarmerCode), ex.Message);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                }
                 return View(model);
             }
         }
@@ -86,6 +94,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerID = farmer.FarmerID,
                 FarmerCode = farmer.FarmerCode,
                 FullName = farmer.FullName,
+                Email = farmer.User?.Email ?? string.Empty,
                 Phone = farmer.Phone,
                 Address = farmer.Address,
                 BankAccountNo = farmer.BankAccountNo,
@@ -117,7 +126,14 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
             catch (BusinessRuleException ex)
             {
-                ModelState.AddModelError(string.Empty, ex.Message);
+                if (ex.Message.Contains("Email", StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(nameof(model.Email), ex.Message);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                }
                 return View(model);
             }
             catch (DbUpdateConcurrencyException)
@@ -130,14 +146,15 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleActive(int id, bool activate, CancellationToken ct)
+        public async Task<IActionResult> ToggleActive(int id, string activate, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
+            var shouldActivate = FormBindingHelpers.ParseBoolFormValue(activate);
 
             try
             {
-                await _farmerService.SetActiveStatusAsync(id, societyId, activate, CurrentUserId(), ct);
-                TempData["Success"] = activate ? "Farmer activated." : "Farmer deactivated.";
+                await _farmerService.SetActiveStatusAsync(id, societyId, shouldActivate, CurrentUserId(), ct);
+                TempData["Success"] = shouldActivate ? "Farmer activated." : "Farmer deactivated.";
             }
             catch (BusinessRuleException ex)
             {
@@ -145,27 +162,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        // Always derives the Operator's own society from their authenticated
-        // identity — an Operator can NEVER pass a different SocietyID in the
-        // URL or a hidden form field to reach another society's farmers.
-        // This is the server-side enforcement the synopsis requires; nothing
-        // here depends on the UI hiding a field.
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

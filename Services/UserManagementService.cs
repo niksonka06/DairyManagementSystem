@@ -32,6 +32,17 @@ namespace DairyManagementSystem.Services
             return operatorRoleUsers.OrderBy(u => u.FullName).ToList();
         }
 
+        public async Task<ApplicationUser?> GetOperatorByIdAsync(int userId, CancellationToken ct = default)
+        {
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+            if (user is null || !await _userManager.IsInRoleAsync(user, Roles.Operator))
+            {
+                return null;
+            }
+
+            return user;
+        }
+
         public async Task<OperatorCredentialsViewModel> CreateOperatorAsync(OperatorFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             var existing = await _userManager.FindByEmailAsync(model.Email);
@@ -75,6 +86,46 @@ namespace DairyManagementSystem.Services
                 LoginEmail = user.Email,
                 TemporaryPassword = temporaryPassword
             };
+        }
+
+        public async Task UpdateOperatorAsync(OperatorFormViewModel model, int performedByUserId, CancellationToken ct = default)
+        {
+            var user = await GetOperatorByIdAsync(model.UserId, ct)
+                ?? throw new BusinessRuleException("Operator not found.");
+
+            var email = model.Email.Trim().ToLowerInvariant();
+            var existingWithEmail = await _userManager.FindByEmailAsync(email);
+            if (existingWithEmail is not null && existingWithEmail.Id != user.Id)
+            {
+                throw new BusinessRuleException($"Email '{email}' is already registered.");
+            }
+
+            var oldSnapshot = new { user.FullName, user.Email, user.SocietyID };
+
+            user.FullName = model.FullName.Trim();
+            user.SocietyID = model.SocietyID;
+
+            if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+            {
+                user.Email = email;
+                user.UserName = email;
+                user.NormalizedEmail = _userManager.NormalizeEmail(email);
+                user.NormalizedUserName = _userManager.NormalizeName(email);
+            }
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new BusinessRuleException(
+                    "Could not update the operator: " + string.Join("; ", result.Errors.Select(e => e.Description)));
+            }
+
+            _auditService.Log(nameof(ApplicationUser), user.Id, AuditAction.Updated,
+                oldValue: oldSnapshot,
+                newValue: new { user.FullName, user.Email, user.SocietyID, Role = Roles.Operator },
+                performedByUserId);
+
+            await _unitOfWork.SaveChangesAsync(ct);
         }
 
         public async Task SetActiveStatusAsync(int userId, bool isActive, int performedByUserId, CancellationToken ct = default)

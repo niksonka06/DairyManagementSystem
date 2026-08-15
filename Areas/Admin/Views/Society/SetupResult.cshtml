@@ -1,0 +1,32 @@
+@model SocietySetupResultViewModel
+@{
+    ViewData["Title"] = "Society Setup Complete";
+}
+
+<h2 class="mb-4">Society Setup Complete</h2>
+
+<div class="alert alert-success">
+    Society <strong>@Model.SocietyName</strong> was created successfully.
+</div>
+
+@if (Model.OperatorCredentials is not null)
+{
+    <div class="alert alert-warning">
+        <strong>Save these operator credentials now</strong> — the temporary password won't be shown again.
+    </div>
+
+    <div class="card mb-4 col-lg-6">
+        <div class="card-header fw-semibold">Operator Account</div>
+        <div class="card-body">
+            <table class="table table-sm mb-0">
+                <tr><th>Name</th><td>@Model.OperatorCredentials.FullName</td></tr>
+                <tr><th>Login Email</th><td>@Model.OperatorCredentials.LoginEmail</td></tr>
+                <tr><th>Temporary Password</th><td><code>@Model.OperatorCredentials.TemporaryPassword</code></td></tr>
+            </table>
+            <p class="text-muted small mt-3 mb-0">The operator must change this password on first login.</p>
+        </div>
+    </div>
+}
+
+<a asp-action="Index" class="btn btn-primary">Back to Societies</a>
+<a asp-controller="User" asp-action="Index" class="btn btn-outline-secondary">View Operators</a>

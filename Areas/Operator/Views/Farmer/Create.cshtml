@@ -21,6 +21,13 @@
     </div>
 
     <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" type="email" autocomplete="email" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+        <div class="form-text">Used for farmer portal login. Must be unique across the system.</div>
+    </div>
+
+    <div class="mb-3">
         <label asp-for="Phone" class="form-label"></label>
         <input asp-for="Phone" class="form-control" />
         <span asp-validation-for="Phone" class="text-danger"></span>

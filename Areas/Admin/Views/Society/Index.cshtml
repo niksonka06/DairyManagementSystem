@@ -5,7 +5,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Societies</h2>
-    <a asp-action="Create" class="btn btn-primary">+ New Society</a>
+    <a asp-action="Setup" class="btn btn-primary">+ Setup New Society</a>
 </div>
 
 @if (TempData["Success"] != null)
@@ -45,9 +45,10 @@
                     }
                 </td>
                 <td class="text-end">
+                    <a asp-action="Details" asp-route-id="@s.SocietyID" class="btn btn-sm btn-outline-success">View</a>
                     <a asp-action="Edit" asp-route-id="@s.SocietyID" class="btn btn-sm btn-outline-primary">Edit</a>
                     <form asp-action="ToggleActive" asp-route-id="@s.SocietyID" method="post" class="d-inline">
-                        <input type="hidden" name="activate" value="@(!s.IsActive)" />
+                        <input type="hidden" name="activate" value="@(s.IsActive ? "false" : "true")" />
                         @if (s.IsActive)
                         {
                             <button type="submit" class="btn btn-sm btn-outline-secondary">Deactivate</button>

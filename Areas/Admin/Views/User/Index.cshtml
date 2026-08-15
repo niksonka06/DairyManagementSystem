@@ -45,8 +45,9 @@
                     }
                 </td>
                 <td class="text-end">
+                    <a asp-action="EditOperator" asp-route-id="@o.UserId" class="btn btn-sm btn-outline-primary">Edit</a>
                     <form asp-action="ToggleActive" asp-route-id="@o.UserId" method="post" class="d-inline">
-                        <input type="hidden" name="activate" value="@(!o.IsActive)" />
+                        <input type="hidden" name="activate" value="@(o.IsActive ? "false" : "true")" />
                         @if (o.IsActive)
                         {
                             <button type="submit" class="btn btn-sm btn-outline-secondary">Deactivate</button>

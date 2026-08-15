@@ -4,6 +4,8 @@ namespace DairyManagementSystem.Models.ViewModels
 {
     public class OperatorFormViewModel
     {
+        public int UserId { get; set; } // 0 on Create
+
         [Required]
         [StringLength(100)]
         [Display(Name = "Full Name")]
