@@ -66,7 +66,7 @@
                     <a asp-action="AddStock" asp-route-id="@f.FeedItemID" class="btn btn-sm btn-outline-success">Add Stock</a>
                     <a asp-action="Edit" asp-route-id="@f.FeedItemID" class="btn btn-sm btn-outline-primary">Edit</a>
                     <form asp-action="ToggleActive" asp-route-id="@f.FeedItemID" method="post" class="d-inline">
-                        <input type="hidden" name="activate" value="@(!f.IsActive)" />
+                        <input type="hidden" name="activate" value="@(f.IsActive ? "false" : "true")" />
                         @if (f.IsActive)
                         {
                             <button type="submit" class="btn btn-sm btn-outline-secondary">Deactivate</button>

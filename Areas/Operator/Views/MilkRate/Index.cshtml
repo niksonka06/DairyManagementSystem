@@ -49,7 +49,7 @@
                 <td class="text-end">
                     <a asp-action="Edit" asp-route-id="@r.RateID" class="btn btn-sm btn-outline-primary">Edit</a>
                     <form asp-action="ToggleActive" asp-route-id="@r.RateID" method="post" class="d-inline">
-                        <input type="hidden" name="activate" value="@(!r.IsActive)" />
+                        <input type="hidden" name="activate" value="@(r.IsActive ? "false" : "true")" />
                         @if (r.IsActive)
                         {
                             <button type="submit" class="btn btn-sm btn-outline-secondary">Deactivate</button>
