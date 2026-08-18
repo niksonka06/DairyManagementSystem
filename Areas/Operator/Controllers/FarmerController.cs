@@ -38,9 +38,13 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create(CancellationToken ct)
         {
-            return View(new FarmerFormViewModel());
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            return View(new FarmerFormViewModel
+            {
+                FarmerCode = await _farmerService.GetNextFarmerCodeAsync(societyId, ct)
+            });
         }
 
         [HttpPost]
@@ -51,6 +55,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             if (!ModelState.IsValid)
             {
+                model.FarmerCode = await _farmerService.GetNextFarmerCodeAsync(model.SocietyID, ct);
                 return View(model);
             }
 
@@ -75,6 +80,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 {
                     ModelState.AddModelError(string.Empty, ex.Message);
                 }
+                model.FarmerCode = await _farmerService.GetNextFarmerCodeAsync(model.SocietyID, ct);
                 return View(model);
             }
         }

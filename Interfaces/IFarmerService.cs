@@ -8,6 +8,7 @@ namespace DairyManagementSystem.Interfaces
         Task<List<Farmer>> GetBySocietyAsync(int societyId, CancellationToken ct = default);
         Task<Farmer?> GetByIdWithinSocietyAsync(int farmerId, int societyId, CancellationToken ct = default);
         Task<Farmer?> GetByUserIdAsync(int userId, CancellationToken ct = default);
+        Task<string> GetNextFarmerCodeAsync(int societyId, CancellationToken ct = default);
         Task<FarmerCredentialsViewModel> CreateAsync(FarmerFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task UpdateAsync(FarmerFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task SetActiveStatusAsync(int farmerId, int societyId, bool isActive, int performedByUserId, CancellationToken ct = default);

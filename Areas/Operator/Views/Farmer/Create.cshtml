@@ -10,7 +10,8 @@
 
     <div class="mb-3">
         <label asp-for="FarmerCode" class="form-label"></label>
-        <input asp-for="FarmerCode" class="form-control" />
+        <input asp-for="FarmerCode" class="form-control" readonly />
+        <div class="form-text">Assigned automatically. Next available code for this society.</div>
         <span asp-validation-for="FarmerCode" class="text-danger"></span>
     </div>
 

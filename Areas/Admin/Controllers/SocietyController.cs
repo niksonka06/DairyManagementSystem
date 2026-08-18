@@ -60,9 +60,12 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public IActionResult Setup()
+        public async Task<IActionResult> Setup(CancellationToken ct)
         {
-            return View(new SocietySetupViewModel());
+            return View(new SocietySetupViewModel
+            {
+                RegistrationNo = await _societyService.GetNextRegistrationNoAsync(ct)
+            });
         }
 
         [HttpPost]
@@ -71,6 +74,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.RegistrationNo = await _societyService.GetNextRegistrationNoAsync(ct);
                 return View(model);
             }
 
@@ -81,6 +85,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
                 if (existingOperator is not null)
                 {
                     ModelState.AddModelError(nameof(model.OperatorEmail), $"Email '{email}' is already registered.");
+                    model.RegistrationNo = await _societyService.GetNextRegistrationNoAsync(ct);
                     return View(model);
                 }
             }
@@ -125,6 +130,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
                     ModelState.AddModelError(string.Empty, ex.Message);
                 }
 
+                model.RegistrationNo = await _societyService.GetNextRegistrationNoAsync(ct);
                 return View(model);
             }
         }

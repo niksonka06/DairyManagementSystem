@@ -37,17 +37,25 @@ namespace DairyManagementSystem.Services
             return await _societyRepository.GetByIdAsync(societyId, ct);
         }
 
+        public async Task<string> GetNextRegistrationNoAsync(CancellationToken ct = default)
+        {
+            var numbers = await _societyRepository.GetRegistrationNumbersAsync(ct);
+            return SequentialCode.Next(SequentialCode.SocietyPrefix, numbers, prefixOrNumericOnly: true);
+        }
+
         public async Task<Society> CreateAsync(SocietyFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
-            if (await _societyRepository.RegistrationNoExistsAsync(model.RegistrationNo, excludingSocietyId: null, ct))
+            var registrationNo = await GetNextRegistrationNoAsync(ct);
+
+            if (await _societyRepository.RegistrationNoExistsAsync(registrationNo, excludingSocietyId: null, ct))
             {
-                throw new BusinessRuleException($"Registration number '{model.RegistrationNo.Trim()}' is already in use by another society.");
+                throw new BusinessRuleException($"Registration number '{registrationNo}' is already in use by another society.");
             }
 
             var society = new Society
             {
                 SocietyName = model.SocietyName.Trim(),
-                RegistrationNo = model.RegistrationNo.Trim(),
+                RegistrationNo = registrationNo,
                 Address = model.Address.Trim(),
                 ContactPhone = model.ContactPhone.Trim(),
                 IsActive = true,
@@ -80,15 +88,9 @@ namespace DairyManagementSystem.Services
             var society = await _societyRepository.GetByIdAsync(model.SocietyID, ct)
                 ?? throw new BusinessRuleException("Society not found. It may have been removed by another user.");
 
-            if (await _societyRepository.RegistrationNoExistsAsync(model.RegistrationNo, excludingSocietyId: society.SocietyID, ct))
-            {
-                throw new BusinessRuleException($"Registration number '{model.RegistrationNo.Trim()}' is already in use by another society.");
-            }
-
             var oldSnapshot = new { society.SocietyName, society.RegistrationNo, society.Address, society.ContactPhone };
 
             society.SocietyName = model.SocietyName.Trim();
-            society.RegistrationNo = model.RegistrationNo.Trim();
             society.Address = model.Address.Trim();
             society.ContactPhone = model.ContactPhone.Trim();
 

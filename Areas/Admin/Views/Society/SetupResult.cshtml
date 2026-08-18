@@ -19,6 +19,7 @@
         <div class="card-header fw-semibold">Operator Account</div>
         <div class="card-body">
             <table class="table table-sm mb-0">
+                <tr><th>Operator Code</th><td>@(string.IsNullOrEmpty(Model.OperatorCredentials.StaffCode) ? "—" : Model.OperatorCredentials.StaffCode)</td></tr>
                 <tr><th>Name</th><td>@Model.OperatorCredentials.FullName</td></tr>
                 <tr><th>Login Email</th><td>@Model.OperatorCredentials.LoginEmail</td></tr>
                 <tr><th>Temporary Password</th><td><code>@Model.OperatorCredentials.TemporaryPassword</code></td></tr>

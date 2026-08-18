@@ -33,6 +33,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             var viewModel = operators.Select(o => new OperatorListItemViewModel
             {
                 UserId = o.Id,
+                StaffCode = o.StaffCode ?? "—",
                 FullName = o.FullName,
                 Email = o.Email ?? string.Empty,
                 SocietyName = o.SocietyID.HasValue && societyNameById.TryGetValue(o.SocietyID.Value, out var name)
@@ -49,6 +50,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         {
             var model = new OperatorFormViewModel
             {
+                StaffCode = await _userManagementService.GetNextOperatorCodeAsync(ct),
                 AvailableSocieties = await LoadSocietyOptionsAsync(ct)
             };
             return View(model);
@@ -60,6 +62,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid)
             {
+                model.StaffCode = await _userManagementService.GetNextOperatorCodeAsync(ct);
                 model.AvailableSocieties = await LoadSocietyOptionsAsync(ct);
                 return View(model);
             }
@@ -72,6 +75,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(nameof(model.Email), ex.Message);
+                model.StaffCode = await _userManagementService.GetNextOperatorCodeAsync(ct);
                 model.AvailableSocieties = await LoadSocietyOptionsAsync(ct);
                 return View(model);
             }
@@ -89,6 +93,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             var model = new OperatorFormViewModel
             {
                 UserId = user.Id,
+                StaffCode = user.StaffCode ?? string.Empty,
                 FullName = user.FullName,
                 Email = user.Email ?? string.Empty,
                 SocietyID = user.SocietyID ?? 0,

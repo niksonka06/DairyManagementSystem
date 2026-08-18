@@ -41,9 +41,15 @@ namespace DairyManagementSystem.Services
             return await _farmerRepository.GetByUserIdAsync(userId, ct);
         }
 
+        public async Task<string> GetNextFarmerCodeAsync(int societyId, CancellationToken ct = default)
+        {
+            var codes = await _farmerRepository.GetCodesBySocietyAsync(societyId, ct);
+            return SequentialCode.Next(SequentialCode.FarmerPrefix, codes);
+        }
+
         public async Task<FarmerCredentialsViewModel> CreateAsync(FarmerFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
-            var farmerCode = model.FarmerCode.Trim();
+            var farmerCode = await GetNextFarmerCodeAsync(model.SocietyID, ct);
 
             if (await _farmerRepository.FarmerCodeExistsInSocietyAsync(farmerCode, model.SocietyID, excludingFarmerId: null, ct))
             {
@@ -136,12 +142,6 @@ namespace DairyManagementSystem.Services
             var farmer = await _farmerRepository.GetByIdWithinSocietyAsync(model.FarmerID, model.SocietyID, ct)
                 ?? throw new BusinessRuleException("Farmer not found in this society.");
 
-            var farmerCode = model.FarmerCode.Trim();
-            if (await _farmerRepository.FarmerCodeExistsInSocietyAsync(farmerCode, model.SocietyID, excludingFarmerId: farmer.FarmerID, ct))
-            {
-                throw new BusinessRuleException($"Farmer code '{farmerCode}' is already used in this society.");
-            }
-
             var loginEmail = model.Email.Trim().ToLowerInvariant();
             if (farmer.User is null)
             {
@@ -165,7 +165,6 @@ namespace DairyManagementSystem.Services
                 LoginEmail = farmer.User.Email
             };
 
-            farmer.FarmerCode = farmerCode;
             farmer.FullName = model.FullName.Trim();
             farmer.Phone = model.Phone.Trim();
             farmer.Address = model.Address.Trim();

@@ -20,6 +20,14 @@ namespace DairyManagementSystem.Repositories
                      && f.FarmerID != (excludingFarmerId ?? 0), ct);
         }
 
+        public async Task<List<string>> GetCodesBySocietyAsync(int societyId, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Where(f => f.SocietyID == societyId)
+                .Select(f => f.FarmerCode)
+                .ToListAsync(ct);
+        }
+
         public async Task<List<Farmer>> GetBySocietyAsync(int societyId, CancellationToken ct = default)
         {
             return await DbSet.AsNoTracking()

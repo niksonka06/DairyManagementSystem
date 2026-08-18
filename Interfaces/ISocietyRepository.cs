@@ -5,5 +5,6 @@ namespace DairyManagementSystem.Interfaces
     public interface ISocietyRepository : IRepository<Society>
     {
         Task<bool> RegistrationNoExistsAsync(string registrationNo, int? excludingSocietyId, CancellationToken ct = default);
+        Task<List<string>> GetRegistrationNumbersAsync(CancellationToken ct = default);
     }
 }

@@ -10,6 +10,12 @@
     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
     <div class="mb-3">
+        <label asp-for="StaffCode" class="form-label"></label>
+        <input asp-for="StaffCode" class="form-control" readonly />
+        <div class="form-text">Operator code cannot be changed after creation.</div>
+    </div>
+
+    <div class="mb-3">
         <label asp-for="FullName" class="form-label"></label>
         <input asp-for="FullName" class="form-control" />
         <span asp-validation-for="FullName" class="text-danger"></span>

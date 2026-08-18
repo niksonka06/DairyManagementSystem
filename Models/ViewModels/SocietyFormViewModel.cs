@@ -13,7 +13,7 @@ namespace DairyManagementSystem.Models.ViewModels
 
         [Required]
         [StringLength(50)]
-        [Display(Name = "Registration No.")]
+        [Display(Name = "Society Code")]
         public string RegistrationNo { get; set; } = string.Empty;
 
         [Required]

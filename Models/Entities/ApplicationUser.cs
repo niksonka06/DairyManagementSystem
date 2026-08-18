@@ -15,6 +15,9 @@ namespace DairyManagementSystem.Models.Entities
 
         public bool IsActive { get; set; } = true;
 
+        // Operator display code (OPR001). Null for Admin and Farmer logins.
+        public string? StaffCode { get; set; }
+
         // Forces password change on first login. Defaults to true for every
         // new account — the seeded Admin's own seed logic will flip this
         // after you set a real password (see Data/Seed/DbInitializer.cs).

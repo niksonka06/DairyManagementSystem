@@ -16,7 +16,8 @@
 
     <div class="mb-3">
         <label asp-for="RegistrationNo" class="form-label"></label>
-        <input asp-for="RegistrationNo" class="form-control" />
+        <input asp-for="RegistrationNo" class="form-control" readonly />
+        <div class="form-text">Assigned automatically.</div>
         <span asp-validation-for="RegistrationNo" class="text-danger"></span>
     </div>
 

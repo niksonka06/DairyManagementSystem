@@ -34,6 +34,8 @@ namespace DairyManagementSystem.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.Property(u => u.FullName).HasMaxLength(100).IsRequired();
+                entity.Property(u => u.StaffCode).HasMaxLength(20);
+                entity.HasIndex(u => u.StaffCode).IsUnique().HasFilter("[StaffCode] IS NOT NULL");
 
                 entity.HasOne(u => u.Society)
                     .WithMany()

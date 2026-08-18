@@ -43,6 +43,16 @@ namespace DairyManagementSystem.Services
             return user;
         }
 
+        public async Task<string> GetNextOperatorCodeAsync(CancellationToken ct = default)
+        {
+            var operators = await GetOperatorsAsync(ct);
+            var codes = operators
+                .Select(o => o.StaffCode)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c!);
+            return SequentialCode.Next(SequentialCode.OperatorPrefix, codes, prefixOrNumericOnly: true);
+        }
+
         public async Task<OperatorCredentialsViewModel> CreateOperatorAsync(OperatorFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             var existing = await _userManager.FindByEmailAsync(model.Email);
@@ -51,6 +61,7 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException($"Email '{model.Email}' is already registered.");
             }
 
+            var staffCode = await GetNextOperatorCodeAsync(ct);
             var temporaryPassword = TemporaryPasswordGenerator.Generate();
 
             var user = new ApplicationUser
@@ -58,6 +69,7 @@ namespace DairyManagementSystem.Services
                 UserName = model.Email.Trim(),
                 Email = model.Email.Trim(),
                 FullName = model.FullName.Trim(),
+                StaffCode = staffCode,
                 SocietyID = model.SocietyID,
                 IsActive = true,
                 MustChangePassword = true,
@@ -75,13 +87,14 @@ namespace DairyManagementSystem.Services
 
             _auditService.Log(nameof(ApplicationUser), user.Id, AuditAction.Created,
                 oldValue: null,
-                newValue: new { user.FullName, user.Email, user.SocietyID, Role = Roles.Operator },
+                newValue: new { user.StaffCode, user.FullName, user.Email, user.SocietyID, Role = Roles.Operator },
                 performedByUserId);
 
             await _unitOfWork.SaveChangesAsync(ct); // persists the audit row (UserManager.CreateAsync already committed the user itself)
 
             return new OperatorCredentialsViewModel
             {
+                StaffCode = user.StaffCode,
                 FullName = user.FullName,
                 LoginEmail = user.Email,
                 TemporaryPassword = temporaryPassword
