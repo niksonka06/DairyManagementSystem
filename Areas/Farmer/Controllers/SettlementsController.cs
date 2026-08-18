@@ -1,3 +1,4 @@
+using DairyManagementSystem.Helpers;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
@@ -70,6 +71,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             var model = new FarmerSettlementDetailViewModel
             {
+                PaymentID = payment.PaymentID,
                 PeriodStart = payment.PeriodStart,
                 PeriodEnd = payment.PeriodEnd,
                 GrossAmount = payment.GrossAmount,
@@ -85,6 +87,25 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
             };
 
             return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Download(int id, CancellationToken ct)
+        {
+            var farmer = await CurrentFarmerAsync(ct);
+            if (farmer is null)
+            {
+                return NotFound();
+            }
+
+            var payment = await _paymentService.GetByIdForFarmerAsync(id, farmer.FarmerID, ct);
+            if (payment is null)
+            {
+                return NotFound();
+            }
+
+            var pdf = SettlementPdf.Generate(payment, farmer.FarmerCode, farmer.FullName);
+            return File(pdf, "application/pdf", $"Settlement_{farmer.FarmerCode}_{payment.PeriodStart:yyyyMMdd}.pdf");
         }
 
         private async Task<Models.Entities.Farmer?> CurrentFarmerAsync(CancellationToken ct)

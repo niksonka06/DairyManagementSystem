@@ -10,6 +10,7 @@ namespace DairyManagementSystem.Models.ViewModels
         public int TotalSocietyCount { get; set; }
         public int ActiveFarmerCount { get; set; }
         public decimal PendingSettlementsAmount { get; set; }
+        public decimal CarryForwardAmount { get; set; }
         public int PendingSettlementsCount { get; set; }
 
         public List<SocietyPerformanceRowViewModel> Societies { get; set; } = new();
@@ -27,6 +28,7 @@ namespace DairyManagementSystem.Models.ViewModels
         public int MorningEntries { get; set; }
         public int EveningEntries { get; set; }
         public decimal PendingSettlementsAmount { get; set; }
+        public decimal CarryForwardAmount { get; set; }
         public int PendingSettlementsCount { get; set; }
     }
 
@@ -45,6 +47,7 @@ namespace DairyManagementSystem.Models.ViewModels
         public int ActiveFarmerCount { get; set; }
         public int TotalFarmerCount { get; set; }
         public decimal PendingSettlementsAmount { get; set; }
+        public decimal CarryForwardAmount { get; set; }
         public int PendingSettlementsCount { get; set; }
         public int MorningEntries { get; set; }
         public int EveningEntries { get; set; }

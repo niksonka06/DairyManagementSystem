@@ -39,13 +39,12 @@ namespace DairyManagementSystem.Repositories
                 p.PaymentID != (excludingPaymentId ?? 0), ct);
         }
 
-        public async Task<Payment?> GetMostRecentUnpaidBeforeAsync(int farmerId, DateTime periodStart, CancellationToken ct = default)
+        public async Task<Payment?> GetMostRecentBeforeAsync(int farmerId, DateTime periodStart, CancellationToken ct = default)
         {
             return await DbSet.AsNoTracking()
                 .Where(p => p.FarmerID == farmerId
                             && p.PeriodStart < periodStart.Date
-                            && p.Status != SettlementStatus.Cancelled
-                            && p.Status != SettlementStatus.Paid)
+                            && (p.Status == SettlementStatus.Generated || p.Status == SettlementStatus.Paid))
                 .OrderByDescending(p => p.PeriodStart)
                 .FirstOrDefaultAsync(ct);
         }

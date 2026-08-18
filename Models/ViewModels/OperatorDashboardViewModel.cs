@@ -7,6 +7,7 @@ namespace DairyManagementSystem.Models.ViewModels
         public decimal TodayPayable { get; set; }
         public int ActiveFarmerCount { get; set; }
         public decimal PendingSettlementsAmount { get; set; }
+        public decimal CarryForwardAmount { get; set; }
         public int MorningEntries { get; set; }
         public int EveningEntries { get; set; }
         public List<string> TrendLabels { get; set; } = new();

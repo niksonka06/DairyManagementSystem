@@ -1,0 +1,34 @@
+<script>
+    (function () {
+        const dateInput = document.getElementById('DispatchDate');
+        const collectedInput = document.getElementById('TotalCollected');
+        const dispatchedInput = document.getElementById('TotalDispatched');
+        const url = '@Url.Action("CollectedLitres", "Dispatch", new { area = "Operator" })';
+
+        if (!dateInput || !collectedInput || !url) {
+            return;
+        }
+
+        async function refreshCollected() {
+            const date = dateInput.value;
+            if (!date) {
+                return;
+            }
+
+            const response = await fetch(url + '?date=' + encodeURIComponent(date), { headers: { 'Accept': 'application/json' } });
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+            const litres = Number(data.litres || 0);
+            collectedInput.value = litres.toFixed(2);
+
+            if (dispatchedInput && dispatchedInput.dataset.autofillDispatched === 'true') {
+                dispatchedInput.value = litres > 0 ? litres.toFixed(2) : '';
+            }
+        }
+
+        dateInput.addEventListener('change', refreshCollected);
+    })();
+</script>

@@ -28,7 +28,12 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             var viewModel = rates.Select(r => new MilkRateListItemViewModel
             {
                 RateID = r.RateID,
-                FatPercent = r.FatPercent,
+                FatPercentFrom = r.FatPercentFrom,
+                FatPercentTo = r.FatPercentTo,
+                SnfPercentFrom = r.SnfPercentFrom,
+                SnfPercentTo = r.SnfPercentTo,
+                ClrFrom = r.ClrFrom,
+                ClrTo = r.ClrTo,
                 RatePerLitre = r.RatePerLitre,
                 EffectiveFrom = r.EffectiveFrom,
                 IsActive = r.IsActive
@@ -57,7 +62,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             try
             {
                 await _milkRateService.CreateAsync(model, CurrentUserId(), ct);
-                TempData["Success"] = $"Rate for {model.FatPercent}% fat added.";
+                TempData["Success"] = $"Rate for fat {model.FatPercentFrom:0.00}–{model.FatPercentTo:0.00}, SNF {model.SnfPercentFrom:0.00}–{model.SnfPercentTo:0.00}, CLR {model.ClrFrom:0.00}–{model.ClrTo:0.00} added.";
                 return RedirectToAction(nameof(Index));
             }
             catch (BusinessRuleException ex)
@@ -81,7 +86,12 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             var model = new MilkRateFormViewModel
             {
                 RateID = rate.RateID,
-                FatPercent = rate.FatPercent,
+                FatPercentFrom = rate.FatPercentFrom,
+                FatPercentTo = rate.FatPercentTo,
+                SnfPercentFrom = rate.SnfPercentFrom,
+                SnfPercentTo = rate.SnfPercentTo,
+                ClrFrom = rate.ClrFrom,
+                ClrTo = rate.ClrTo,
                 RatePerLitre = rate.RatePerLitre,
                 EffectiveFrom = rate.EffectiveFrom,
                 SocietyID = rate.SocietyID,

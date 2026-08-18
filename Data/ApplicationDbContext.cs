@@ -91,20 +91,27 @@ namespace DairyManagementSystem.Data
             builder.Entity<MilkRate>(entity =>
             {
                 entity.HasKey(r => r.RateID); // RateID doesn't match EF Core's "Id"/"{ClassName}Id" convention
-                entity.Property(r => r.FatPercent).HasColumnType("decimal(4,2)");
+                entity.Property(r => r.FatPercentFrom).HasColumnType("decimal(4,2)");
+                entity.Property(r => r.FatPercentTo).HasColumnType("decimal(4,2)");
+                entity.Property(r => r.SnfPercentFrom).HasColumnType("decimal(4,2)");
+                entity.Property(r => r.SnfPercentTo).HasColumnType("decimal(4,2)");
+                entity.Property(r => r.ClrFrom).HasColumnType("decimal(5,2)");
+                entity.Property(r => r.ClrTo).HasColumnType("decimal(5,2)");
                 entity.Property(r => r.RatePerLitre).HasColumnType("decimal(8,2)");
                 entity.Property(r => r.EffectiveFrom).HasColumnType("date");
 
-                // CHECK constraints at the database level — matches the
-                // synopsis's explicit CHECK(2.5-9.0) / CHECK(>0), and protects
-                // data integrity even if a future code path (or a raw SQL
-                // script) bypasses the C# [Range] validation.
-                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_FatPercent", "[FatPercent] BETWEEN 2.5 AND 9.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_FatPercentFrom", "[FatPercentFrom] BETWEEN 2.5 AND 9.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_FatPercentTo", "[FatPercentTo] BETWEEN 2.5 AND 9.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_FatRange", "[FatPercentFrom] <= [FatPercentTo]"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_SnfPercentFrom", "[SnfPercentFrom] BETWEEN 7.5 AND 11.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_SnfPercentTo", "[SnfPercentTo] BETWEEN 7.5 AND 11.0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_SnfRange", "[SnfPercentFrom] <= [SnfPercentTo]"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_ClrFrom", "[ClrFrom] BETWEEN 0 AND 50"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_ClrTo", "[ClrTo] BETWEEN 0 AND 50"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_ClrRange", "[ClrFrom] <= [ClrTo]"));
                 entity.ToTable(t => t.HasCheckConstraint("CK_MilkRates_RatePerLitre", "[RatePerLitre] > 0"));
 
-                // One rate per (society, fat%, effective date) — prevents two
-                // ambiguous rows for the exact same band on the exact same day.
-                entity.HasIndex(r => new { r.SocietyID, r.FatPercent, r.EffectiveFrom }).IsUnique();
+                entity.HasIndex(r => new { r.SocietyID, r.EffectiveFrom });
 
                 entity.HasOne(r => r.Society)
                     .WithMany()

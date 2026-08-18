@@ -46,6 +46,7 @@
             <th>Qty (L)</th>
             <th>Fat %</th>
             <th>SNF</th>
+            <th>CLR</th>
             <th>Rate</th>
             <th>Amount</th>
             <th>Status</th>
@@ -61,6 +62,7 @@
                 <td>@c.Quantity.ToString("0.00")</td>
                 <td>@c.FatPercent.ToString("0.0")</td>
                 <td>@(c.SNF.HasValue ? c.SNF.Value.ToString("0.0") : "—")</td>
+                <td>@(c.CLR.HasValue ? c.CLR.Value.ToString("0.0") : "—")</td>
                 <td>₹@c.RatePerLitre.ToString("0.00")</td>
                 <td>₹@c.Amount.ToString("0.00")</td>
                 <td>
@@ -83,7 +85,7 @@
         }
         @if (!Model.Any())
         {
-            <tr><td colspan="9" class="text-center text-muted">No collections recorded for this date.</td></tr>
+            <tr><td colspan="10" class="text-center text-muted">No collections recorded for this date.</td></tr>
         }
     </tbody>
 </table>

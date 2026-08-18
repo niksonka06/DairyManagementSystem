@@ -1,3 +1,4 @@
+using DairyManagementSystem.Helpers;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
@@ -28,32 +29,35 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _paymentRepository = paymentRepository;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
-            var today = DateTime.Today;
+            var overviewDate = (date ?? DateTime.Today).Date;
 
-            var daily = await _reportService.GetDailyCollectionReportAsync(societyId, today, ct);
+            var daily = await _reportService.GetDailyCollectionReportAsync(societyId, overviewDate, ct);
             var farmers = await _farmerRepository.GetBySocietyAsync(societyId, ct);
-            var collections = await _collectionRepository.GetBySocietyAndDateAsync(societyId, today, ct);
+            var collections = await _collectionRepository.GetBySocietyAndDateAsync(societyId, overviewDate, ct);
             var payments = await _paymentRepository.GetBySocietyAsync(societyId, ct);
 
             var trendLabels = new List<string>();
             var trendValues = new List<decimal>();
-            foreach (var day in Enumerable.Range(0, 7).Select(i => today.AddDays(-i)).OrderBy(d => d))
+            foreach (var day in Enumerable.Range(0, 7).Select(i => overviewDate.AddDays(-i)).OrderBy(d => d))
             {
                 var report = await _reportService.GetDailyCollectionReportAsync(societyId, day, ct);
                 trendLabels.Add(day.ToString("dd-MMM"));
                 trendValues.Add(report.TotalQuantity);
             }
 
+            var generated = payments.Where(p => p.Status == SettlementStatus.Generated);
+
             var model = new OperatorDashboardViewModel
             {
-                OverviewDate = today,
+                OverviewDate = overviewDate,
                 TodayMilkLitres = daily.TotalQuantity,
                 TodayPayable = daily.TotalAmount,
                 ActiveFarmerCount = farmers.Count(f => f.IsActive),
-                PendingSettlementsAmount = payments.Where(p => p.Status == SettlementStatus.Generated).Sum(p => p.NetAmount),
+                PendingSettlementsAmount = SettlementKpis.PayableGenerated(generated),
+                CarryForwardAmount = SettlementKpis.CarryForwardGenerated(generated),
                 MorningEntries = collections.Count(c => c.Shift == Shift.Morning),
                 EveningEntries = collections.Count(c => c.Shift == Shift.Evening),
                 TrendLabels = trendLabels,

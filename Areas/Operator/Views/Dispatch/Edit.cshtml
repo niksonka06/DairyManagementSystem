@@ -4,7 +4,6 @@
 }
 
 <h2 class="mb-4">Edit Dispatch</h2>
-<p class="text-muted">Current total collected for this date: <strong>@(((decimal)ViewBag.CurrentTotalCollected).ToString("0.00"))L</strong> (recalculated automatically on save)</p>
 
 <form asp-action="Edit" method="post" class="col-md-6">
     <input type="hidden" asp-for="DispatchID" />
@@ -38,9 +37,16 @@
     </div>
 
     <div class="mb-3">
+        <label asp-for="TotalCollected" class="form-label"></label>
+        <input asp-for="TotalCollected" class="form-control" type="number" step="0.01" readonly tabindex="-1" />
+        <div class="form-text">Sum of milk collections for the dispatch date. Recalculated on save.</div>
+    </div>
+
+    <div class="mb-3">
         <label asp-for="TotalDispatched" class="form-label"></label>
         <input asp-for="TotalDispatched" class="form-control" type="number" step="0.01" min="0.01" />
         <span asp-validation-for="TotalDispatched" class="text-danger"></span>
+        <div class="form-text">Tanker reading. Not overwritten when the date changes.</div>
     </div>
 
     <div class="mb-3">
@@ -55,4 +61,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="_DispatchCollectedScript" />
 }

@@ -1,3 +1,4 @@
+using DairyManagementSystem.Helpers;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Enums;
 using DairyManagementSystem.Models.ViewModels;
@@ -51,6 +52,7 @@ namespace DairyManagementSystem.Services
                 model.TotalPayableToday += row.TodayPayable;
                 model.ActiveFarmerCount += row.ActiveFarmerCount;
                 model.PendingSettlementsAmount += row.PendingSettlementsAmount;
+                model.CarryForwardAmount += row.CarryForwardAmount;
                 model.PendingSettlementsCount += row.PendingSettlementsCount;
             }
 
@@ -97,8 +99,9 @@ namespace DairyManagementSystem.Services
                 TodayPayable = performance.TodayPayable,
                 ActiveFarmerCount = performance.ActiveFarmerCount,
                 TotalFarmerCount = farmers.Count,
-                PendingSettlementsAmount = pending.Sum(p => p.NetAmount),
-                PendingSettlementsCount = pending.Count,
+                PendingSettlementsAmount = SettlementKpis.PayableGenerated(pending),
+                CarryForwardAmount = SettlementKpis.CarryForwardGenerated(pending),
+                PendingSettlementsCount = SettlementKpis.PayableCount(pending),
                 MorningEntries = performance.MorningEntries,
                 EveningEntries = performance.EveningEntries,
                 Operators = operators
@@ -142,8 +145,9 @@ namespace DairyManagementSystem.Services
                 TodayPayable = daily.TotalAmount,
                 MorningEntries = collections.Count(c => c.Shift == Shift.Morning),
                 EveningEntries = collections.Count(c => c.Shift == Shift.Evening),
-                PendingSettlementsAmount = pending.Sum(p => p.NetAmount),
-                PendingSettlementsCount = pending.Count
+                PendingSettlementsAmount = SettlementKpis.PayableGenerated(pending),
+                CarryForwardAmount = SettlementKpis.CarryForwardGenerated(pending),
+                PendingSettlementsCount = SettlementKpis.PayableCount(pending),
             };
         }
     }

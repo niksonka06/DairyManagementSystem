@@ -32,7 +32,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
         {
             var farmer = await CurrentFarmerAsync(ct);
             if (farmer is null)
@@ -40,11 +40,11 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
                 return View("NoProfile");
             }
 
-            var today = DateTime.Today;
-            var monthStart = new DateTime(today.Year, today.Month, 1);
+            var overviewDate = (date ?? DateTime.Today).Date;
+            var monthStart = new DateTime(overviewDate.Year, overviewDate.Month, 1);
 
-            var todayCollections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, today, today, ct);
-            var monthCollections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, monthStart, today, ct);
+            var todayCollections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, overviewDate, overviewDate, ct);
+            var monthCollections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, monthStart, overviewDate, ct);
             var settlements = await _paymentService.GetByFarmerAsync(farmer.FarmerID, ct);
             var latestSettlement = settlements.FirstOrDefault(p => p.Status != SettlementStatus.Draft);
 
@@ -53,6 +53,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             var model = new FarmerDashboardViewModel
             {
+                OverviewDate = overviewDate,
                 FarmerCode = farmer.FarmerCode,
                 FullName = farmer.FullName,
                 TodayQuantity = todayCollections.Sum(c => c.Quantity),

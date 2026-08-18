@@ -117,7 +117,7 @@ where supported
 
 ### Payment calculation
 
-The rate is obtained from the configurable fat-based rate chart.
+The rate is obtained from the configurable fat/SNF/CLR rate chart.
 
 Basic calculation:
 
@@ -142,11 +142,13 @@ Each society can have a configurable rate chart.
 
 Concept:
 
-`Fat % → Rate per litre`
+`Fat % + SNF + CLR → Rate per litre`
 
-Rate entries contain: - Fat percentage - Rate per litre - Effective date
+Rate entries contain: - Fat from–to - SNF from–to - CLR from–to - Rate
+per litre - Effective date
 
-The active/effective rate is used when calculating milk payment.
+The matching band on the latest effective chart is used when calculating
+milk payment.
 
 ------------------------------------------------------------------------
 
@@ -311,7 +313,7 @@ Do not remove or bypass audit logging when changing UI functionality.
 
 -   Society-level morning/evening milk collection
 -   Shift closing/finalization
--   Fat-based configurable milk rates
+-   Fat/SNF/CLR configurable milk rates
 -   Farmer management
 -   Farmer bank details
 -   Farmer portal
@@ -461,6 +463,6 @@ business logic unless explicitly requested.**
 
 **A web-based dairy cooperative ERP that records farmers' milk
 collection and quality, automatically calculates milk payments using
-fat-based rates, manages feed/medicine deductions, generates weekly
+fat, SNF and CLR rate bands, manages feed/medicine deductions, generates weekly
 settlements, tracks dispatch to the higher dairy union, and gives
 farmers transparent access to their own records.**

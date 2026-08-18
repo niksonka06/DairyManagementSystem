@@ -7,6 +7,7 @@ namespace DairyManagementSystem.Models.ViewModels
         public string FarmerCode { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
 
+        public DateTime OverviewDate { get; set; } = DateTime.Today;
         public decimal TodayQuantity { get; set; }
         public decimal TodayAmount { get; set; }
 

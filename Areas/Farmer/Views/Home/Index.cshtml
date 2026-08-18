@@ -3,13 +3,18 @@
     ViewData["Title"] = "My Dashboard";
 }
 
-<h2 class="mb-1">Welcome, @Model.FullName</h2>
-<p class="text-muted">Farmer Code: @Model.FarmerCode</p>
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">Welcome, @Model.FullName</h2>
+        <p class="text-muted mb-0">Farmer Code: @Model.FarmerCode · @Model.OverviewDate.ToString("dd-MMM-yyyy")</p>
+    </div>
+    <partial name="_DashboardDateFilter" model="Model.OverviewDate" />
+</div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card"><div class="card-body">
-            <h6 class="text-muted">Today's Milk</h6>
+            <h6 class="text-muted">Milk on this date</h6>
             <p class="fs-4 mb-0">@Model.TodayQuantity.ToString("0.00") L</p>
             <small class="text-muted">₹@Model.TodayAmount.ToString("0.00")</small>
         </div></div>

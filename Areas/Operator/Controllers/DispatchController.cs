@@ -43,9 +43,24 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create(CancellationToken ct)
         {
-            return View(new DispatchFormViewModel());
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var collected = await _dispatchService.GetCollectedLitresAsync(societyId, DateTime.Today, ct);
+
+            return View(new DispatchFormViewModel
+            {
+                TotalCollected = collected,
+                TotalDispatched = collected
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CollectedLitres(DateTime date, CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var litres = await _dispatchService.GetCollectedLitresAsync(societyId, date, ct);
+            return Json(new { litres });
         }
 
         [HttpPost]
@@ -56,6 +71,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             if (!ModelState.IsValid)
             {
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
 
@@ -68,6 +84,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
         }
@@ -90,12 +107,11 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 VehicleNo = dispatch.VehicleNo,
                 Destination = dispatch.Destination,
                 TotalDispatched = dispatch.TotalDispatched,
+                TotalCollected = await _dispatchService.GetCollectedLitresAsync(societyId, dispatch.DispatchDate, ct),
                 VarianceReason = dispatch.VarianceReason,
                 SocietyID = dispatch.SocietyID,
                 RowVersion = dispatch.RowVersion
             };
-
-            ViewBag.CurrentTotalCollected = dispatch.TotalCollected;
 
             return View(model);
         }
@@ -108,6 +124,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             if (!ModelState.IsValid)
             {
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
 
@@ -120,12 +137,14 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
             catch (DbUpdateConcurrencyException)
             {
                 ModelState.AddModelError(string.Empty,
                     "This dispatch record was modified by someone else while you were editing it. Please reload and try again.");
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
         }

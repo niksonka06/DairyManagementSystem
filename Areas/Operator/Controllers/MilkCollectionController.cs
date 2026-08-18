@@ -39,6 +39,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 Quantity = c.Quantity,
                 FatPercent = c.FatPercent,
                 SNF = c.SNF,
+                CLR = c.CLR,
                 RatePerLitre = c.RatePerLitre,
                 Amount = c.Amount,
                 IsLocked = c.IsLocked

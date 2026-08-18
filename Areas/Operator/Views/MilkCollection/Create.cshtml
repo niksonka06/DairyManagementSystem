@@ -55,12 +55,12 @@
         </div>
         <div class="col-md-4 mb-3">
             <label asp-for="CLR" class="form-label"></label>
-            <input asp-for="CLR" class="form-control" type="number" step="0.1" />
+            <input asp-for="CLR" class="form-control" type="number" step="1" min="0" max="50" />
             <span asp-validation-for="CLR" class="text-danger"></span>
         </div>
     </div>
 
-    <p class="text-muted">Rate and amount are calculated automatically from the Milk Rate Chart once you submit.</p>
+    <p class="text-muted">Rate and amount are calculated automatically from the Milk Rate Chart (fat %, SNF and CLR) once you submit.</p>
 
     <button type="submit" class="btn btn-primary">Record Collection</button>
     <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>

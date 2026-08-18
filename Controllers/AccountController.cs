@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
@@ -6,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace DairyManagementSystem.Controllers
 {
@@ -15,17 +18,23 @@ namespace DairyManagementSystem.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISocietyRepository _societyRepository;
         private readonly IFarmerRepository _farmerRepository;
+        private readonly IEmailService _emailService;
+        private readonly ILogger<AccountController> _logger;
 
         public AccountController(
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
             ISocietyRepository societyRepository,
-            IFarmerRepository farmerRepository)
+            IFarmerRepository farmerRepository,
+            IEmailService emailService,
+            ILogger<AccountController> logger)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _societyRepository = societyRepository;
             _farmerRepository = farmerRepository;
+            _emailService = emailService;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -80,6 +89,140 @@ namespace DairyManagementSystem.Controllers
             }
 
             return RedirectToLocalOrRoleHome(model.ReturnUrl);
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("LoginPolicy")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            // Same generic confirmation whether or not the account exists —
+            // revealing "that email isn't registered" is a user-enumeration leak.
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user is null)
+            {
+                _logger.LogWarning("Forgot password: no account for {Email}. No email sent.", model.Email);
+            }
+            else if (!user.IsActive)
+            {
+                _logger.LogWarning("Forgot password: account {Email} is inactive. No email sent.", model.Email);
+            }
+            else if (string.IsNullOrWhiteSpace(user.Email))
+            {
+                _logger.LogWarning("Forgot password: account {UserId} has no email. No email sent.", user.Id);
+            }
+            else
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+                var callbackUrl = Url.Action(
+                    action: nameof(ResetPassword),
+                    controller: "Account",
+                    values: new { area = "", email = user.Email, code },
+                    protocol: Request.Scheme)!;
+
+                _logger.LogWarning("Forgot password: sending reset mail to {Email}.", user.Email);
+                await _emailService.SendAsync(
+                    user.Email,
+                    "Reset your Smart Dairy Cooperative password",
+                    BuildPasswordResetEmailHtml(user.FullName, callbackUrl));
+            }
+
+            return RedirectToAction(nameof(ForgotPasswordConfirmation));
+        }
+
+        [HttpGet]
+        public IActionResult ForgotPasswordConfirmation()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult ResetPassword(string? email, string? code)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(code))
+            {
+                return RedirectToAction(nameof(ForgotPassword));
+            }
+
+            return View(new ResetPasswordViewModel { Email = email, Code = code });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("LoginPolicy")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            const string genericError = "The reset link is invalid or has expired. Request a new one.";
+
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user is null || !user.IsActive)
+            {
+                ModelState.AddModelError(string.Empty, genericError);
+                return View(model);
+            }
+
+            string token;
+            try
+            {
+                token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(model.Code));
+            }
+            catch (Exception)
+            {
+                ModelState.AddModelError(string.Empty, genericError);
+                return View(model);
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+            if (!result.Succeeded)
+            {
+                var passwordErrors = result.Errors
+                    .Where(e => e.Code.StartsWith("Password", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                if (passwordErrors.Count > 0)
+                {
+                    foreach (var error in passwordErrors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, genericError);
+                }
+
+                return View(model);
+            }
+
+            user.MustChangePassword = false;
+            await _userManager.UpdateAsync(user);
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
+
+            return RedirectToAction(nameof(ResetPasswordConfirmation));
+        }
+
+        [HttpGet]
+        public IActionResult ResetPasswordConfirmation()
+        {
+            return View();
         }
 
         [HttpPost]
@@ -188,6 +331,19 @@ namespace DairyManagementSystem.Controllers
             if (User.IsInRole(Roles.Farmer)) return RedirectToAction("Index", "Home", new { area = "Farmer" });
 
             return RedirectToAction("Index", "Home");
+        }
+
+        private static string BuildPasswordResetEmailHtml(string fullName, string resetUrl)
+        {
+            var name = string.IsNullOrWhiteSpace(fullName) ? "there" : WebUtility.HtmlEncode(fullName);
+            var url = WebUtility.HtmlEncode(resetUrl);
+
+            return $"""
+                <p>Hello {name},</p>
+                <p>We received a request to reset your Smart Dairy Cooperative password. This link expires in 2 hours.</p>
+                <p><a href="{url}">Reset your password</a></p>
+                <p>If you did not request this, you can ignore this email. Your password will not change.</p>
+                """;
         }
     }
 }

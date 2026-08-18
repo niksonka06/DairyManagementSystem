@@ -81,7 +81,17 @@ namespace DairyManagementSystem.Services
 
             var advancePaid = (await _advancePaymentRepository.GetUnappliedByFarmerAsync(model.FarmerID, ct)).Sum(a => a.Amount);
 
-            var otherDeductionsTotal = model.LoanDeduction + model.InsuranceDeduction + model.SocietyFeeDeduction + model.OtherDeduction;
+            var otherDeductionsTotal =
+                (model.LoanDeduction ?? 0) +
+                (model.InsuranceDeduction ?? 0) +
+                (model.SocietyFeeDeduction ?? 0) +
+                (model.OtherDeduction ?? 0);
+
+            var previousDue = model.PreviousDue;
+            if (!previousDue.HasValue)
+            {
+                previousDue = await ResolveCarryForwardAsync(model.FarmerID, periodStart, ct);
+            }
 
             var payment = new Payment
             {
@@ -93,9 +103,9 @@ namespace DairyManagementSystem.Services
                 FeedDeduction = feedDeduction,
                 MedicineDeduction = medicineDeduction,
                 OtherDeductionsTotal = otherDeductionsTotal,
-                PreviousDue = model.PreviousDue,
+                PreviousDue = previousDue.Value,
                 AdvancePaid = advancePaid,
-                NetAmount = ComputeNet(gross, feedDeduction, medicineDeduction, otherDeductionsTotal, model.PreviousDue, advancePaid),
+                NetAmount = ComputeNet(gross, feedDeduction, medicineDeduction, otherDeductionsTotal, previousDue.Value, advancePaid),
                 Status = SettlementStatus.Draft,
                 CreatedAt = DateTime.UtcNow
             };
@@ -214,7 +224,9 @@ namespace DairyManagementSystem.Services
             var farmer = await _farmerRepository.GetByIdAsync(payment.FarmerID, ct);
             if (farmer is not null && !string.IsNullOrWhiteSpace(farmer.Phone))
             {
-                var message = $"Dairy Co-op: Your settlement for {payment.PeriodStart:dd-MMM} to {payment.PeriodEnd:dd-MMM} is ready. Net amount: Rs.{payment.NetAmount:0.00}.";
+                var message = payment.NetAmount < 0
+                    ? $"Dairy Co-op: Settlement {payment.PeriodStart:dd-MMM} to {payment.PeriodEnd:dd-MMM} is negative Rs.{payment.NetAmount:0.00}. This will be deducted from next week's settlement."
+                    : $"Dairy Co-op: Your settlement for {payment.PeriodStart:dd-MMM} to {payment.PeriodEnd:dd-MMM} is ready. Net amount: Rs.{payment.NetAmount:0.00}.";
                 await _smsService.SendAsync(farmer.Phone, message, ct);
             }
         }
@@ -327,7 +339,24 @@ namespace DairyManagementSystem.Services
             await _unitOfWork.SaveChangesAsync(ct);
         }
 
-        // ── Shared helpers ──────────────────────────────────────────────
+        public async Task<(decimal Amount, DateTime PeriodStart, DateTime PeriodEnd)?> GetCarryForwardAsync(
+            int farmerId, DateTime weekReferenceDate, CancellationToken ct = default)
+        {
+            var (periodStart, _) = DateHelpers.ComputeWeek(weekReferenceDate);
+            var prior = await _paymentRepository.GetMostRecentBeforeAsync(farmerId, periodStart, ct);
+            if (prior is null || prior.NetAmount >= 0)
+            {
+                return null;
+            }
+
+            return (prior.NetAmount, prior.PeriodStart, prior.PeriodEnd);
+        }
+
+        private async Task<decimal> ResolveCarryForwardAsync(int farmerId, DateTime periodStart, CancellationToken ct)
+        {
+            var prior = await _paymentRepository.GetMostRecentBeforeAsync(farmerId, periodStart, ct);
+            return prior is not null && prior.NetAmount < 0 ? prior.NetAmount : 0;
+        }
 
         private async Task<(decimal Gross, decimal FeedDeduction, decimal MedicineDeduction)> ComputeAutoAmountsAsync(
             int farmerId, DateTime periodStart, DateTime periodEnd, CancellationToken ct)
@@ -359,10 +388,10 @@ namespace DairyManagementSystem.Services
                 }
             }
 
-            AddIfNonZero(DeductionType.Loan, model.LoanDeduction);
-            AddIfNonZero(DeductionType.Insurance, model.InsuranceDeduction);
-            AddIfNonZero(DeductionType.SocietyFee, model.SocietyFeeDeduction);
-            AddIfNonZero(DeductionType.Other, model.OtherDeduction);
+            AddIfNonZero(DeductionType.Loan, model.LoanDeduction ?? 0);
+            AddIfNonZero(DeductionType.Insurance, model.InsuranceDeduction ?? 0);
+            AddIfNonZero(DeductionType.SocietyFee, model.SocietyFeeDeduction ?? 0);
+            AddIfNonZero(DeductionType.Other, model.OtherDeduction ?? 0);
         }
     }
 }

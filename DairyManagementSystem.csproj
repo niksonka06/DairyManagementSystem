@@ -8,6 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- SMTP (Brevo) for password-reset mail. Secrets stay in User Secrets. -->
+    <PackageReference Include="MailKit" Version="4.17.0" />
+
     <!-- Identity + Authentication -->
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.10" />

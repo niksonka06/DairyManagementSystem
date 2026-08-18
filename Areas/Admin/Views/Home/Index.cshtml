@@ -21,7 +21,7 @@
     <div class="col-md-3">
         <div class="card kpi-card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small text-uppercase">Milk collected today</div>
+                <div class="text-muted small text-uppercase">Milk collected</div>
                 <div class="fs-3 fw-semibold">@Model.TotalMilkTodayLitres.ToString("0.00") L</div>
             </div>
         </div>
@@ -29,7 +29,7 @@
     <div class="col-md-3">
         <div class="card kpi-card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small text-uppercase">Payable today</div>
+                <div class="text-muted small text-uppercase">Payable</div>
                 <div class="fs-3 fw-semibold">₹@Model.TotalPayableToday.ToString("0.00")</div>
             </div>
         </div>
@@ -46,9 +46,13 @@
     <div class="col-md-3">
         <div class="card kpi-card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small text-uppercase">Generated settlements</div>
+                <div class="text-muted small text-uppercase">To pay (generated)</div>
                 <div class="fs-3 fw-semibold">₹@Model.PendingSettlementsAmount.ToString("0.00")</div>
                 <div class="small text-muted">@Model.PendingSettlementsCount settlement(s)</div>
+                @if (Model.CarryForwardAmount < 0)
+                {
+                    <div class="small text-muted">Carry-forward ₹@Model.CarryForwardAmount.ToString("0.00")</div>
+                }
             </div>
         </div>
     </div>
@@ -63,8 +67,8 @@
                 <th>Status</th>
                 <th class="text-end">Operators</th>
                 <th class="text-end">Farmers</th>
-                <th class="text-end">Milk today</th>
-                <th class="text-end">Payable today</th>
+                <th class="text-end">Milk</th>
+                <th class="text-end">Payable</th>
                 <th class="text-end">Morning</th>
                 <th class="text-end">Evening</th>
                 <th class="text-end">Settlements due</th>
@@ -92,7 +96,13 @@
                     <td class="text-end">₹@s.TodayPayable.ToString("0.00")</td>
                     <td class="text-end">@s.MorningEntries</td>
                     <td class="text-end">@s.EveningEntries</td>
-                    <td class="text-end">₹@s.PendingSettlementsAmount.ToString("0.00")</td>
+                    <td class="text-end">
+                        ₹@s.PendingSettlementsAmount.ToString("0.00")
+                        @if (s.CarryForwardAmount < 0)
+                        {
+                            <div class="small text-muted">CF ₹@s.CarryForwardAmount.ToString("0.00")</div>
+                        }
+                    </td>
                     <td class="text-end">
                         <a asp-controller="Society" asp-action="Details" asp-route-id="@s.SocietyID" asp-route-date="@Model.OverviewDate.ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-primary">View</a>
                         <a asp-area="" asp-controller="Reports" asp-action="Index" asp-route-societyId="@s.SocietyID" class="btn btn-sm btn-outline-secondary">Reports</a>

@@ -1,14 +1,47 @@
 @{
     ViewData["Title"] = "Home";
+    Layout = "_AuthLayout";
 }
 
-<div class="landing-hero">
-    <div class="landing-card">
-        <div class="landing-logo"><i class="bi bi-droplet-half"></i></div>
-        <h1 class="mb-3">Smart Dairy Cooperative</h1>
+<div class="landing-panel">
+    <div class="landing-card-wide">
+        <img src="~/images/logo_icon.png" alt="Smart Dairy Cooperative" class="brand-logo-img brand-logo-img-xl" />
+        <h1 class="mb-3">Smart Dairy Cooperative Management System</h1>
         <p class="text-muted mb-4">
-            Milk collection, farmer settlement, feed deductions, and cooperative society management — built for village dairy societies.
+            Eliminate paper registers and manual settlement errors. Manage collection, deductions,
+            weekly payments, dispatch, and farmer transparency from one secure web application.
         </p>
-        <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg px-4">Sign in to continue</a>
+
+        <div class="row g-3 mb-4 text-start">
+            <div class="col-md-4">
+                <div class="feature-pill">
+                    <i class="bi bi-droplet"></i>
+                    <div>
+                        <strong>Milk collection</strong>
+                        <span>Shift-wise entry, fat/SNF rates, receipts</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-pill">
+                    <i class="bi bi-calculator"></i>
+                    <div>
+                        <strong>Weekly settlement</strong>
+                        <span>Auto deductions, payment status, audit trail</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-pill">
+                    <i class="bi bi-shield-check"></i>
+                    <div>
+                        <strong>RBAC & audit</strong>
+                        <span>Admin, Operator, Farmer roles with logging</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <a asp-area="" asp-controller="Account" asp-action="Login" class="btn btn-primary btn-lg px-5">Login to the system</a>
     </div>
 </div>

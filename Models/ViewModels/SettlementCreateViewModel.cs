@@ -13,25 +13,25 @@ namespace DairyManagementSystem.Models.ViewModels
         [Display(Name = "Any date within the target week")]
         public DateTime WeekReferenceDate { get; set; } = DateTime.Today;
 
-        [Range(0, 1000000)]
-        [Display(Name = "Previous Due (₹)")]
-        public decimal PreviousDue { get; set; } = 0;
+        [Range(-10000000, 10000000)]
+        [Display(Name = "Carry-forward (₹)")]
+        public decimal? PreviousDue { get; set; }
 
         [Range(0, 1000000)]
         [Display(Name = "Loan Deduction (₹)")]
-        public decimal LoanDeduction { get; set; } = 0;
+        public decimal? LoanDeduction { get; set; }
 
         [Range(0, 1000000)]
         [Display(Name = "Insurance Deduction (₹)")]
-        public decimal InsuranceDeduction { get; set; } = 0;
+        public decimal? InsuranceDeduction { get; set; }
 
         [Range(0, 1000000)]
         [Display(Name = "Society Fee Deduction (₹)")]
-        public decimal SocietyFeeDeduction { get; set; } = 0;
+        public decimal? SocietyFeeDeduction { get; set; }
 
         [Range(0, 1000000)]
         [Display(Name = "Other Deduction (₹)")]
-        public decimal OtherDeduction { get; set; } = 0;
+        public decimal? OtherDeduction { get; set; }
 
         public int SocietyID { get; set; }
 

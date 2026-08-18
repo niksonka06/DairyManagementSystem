@@ -5,8 +5,8 @@
 }
 
 <div class="auth-card">
-    <h2>Welcome back</h2>
-    <p class="lead">Sign in to continue to your society workspace.</p>
+    <h2>Sign in</h2>
+    <p class="lead">Use your registered email and password. Operators and farmers receive credentials from the society admin.</p>
 
     <form asp-action="Login" method="post">
         <input type="hidden" asp-for="ReturnUrl" />
@@ -14,7 +14,7 @@
 
         <div class="mb-3">
             <label asp-for="Email" class="form-label"></label>
-            <input asp-for="Email" class="form-control" autocomplete="username" />
+            <input asp-for="Email" class="form-control" autocomplete="username" placeholder="you@example.com" />
             <span asp-validation-for="Email" class="text-danger"></span>
         </div>
 
@@ -29,8 +29,12 @@
             <label asp-for="RememberMe" class="form-check-label"></label>
         </div>
 
-        <button type="submit" class="btn btn-primary w-100 py-2">Sign in</button>
+        <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
     </form>
+
+    <p class="auth-card-footer">
+        <a asp-action="ForgotPassword">Forgot password?</a>
+    </p>
 </div>
 
 @section Scripts {

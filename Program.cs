@@ -49,6 +49,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<int>>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromHours(2));
+
 // Secure cookie configuration — directly implements the synopsis's
 // "Session Security: HttpOnly and SameSite=Strict cookie flags" requirement.
 // SameAsRequest in Development so the http launch profile (port 5140) works;
@@ -100,6 +103,7 @@ builder.Services.AddScoped<EnsureActiveOperatorSocietyFilter>();
 
 builder.Services.AddHttpClient("SmsGateway");
 builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Rate limiting on login specifically — account lockout (Stage 3) stops
 // repeated attempts against ONE account, but doesn't stop an attacker
@@ -153,9 +157,9 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("Content-Security-Policy",
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
         "img-src 'self' data:; " +
-        "font-src 'self' https://cdn.jsdelivr.net;");
+        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;");
     await next();
 });
 

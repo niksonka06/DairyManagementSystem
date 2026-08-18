@@ -3,16 +3,19 @@
     ViewData["Title"] = "Society Dashboard";
 }
 
-<div class="mb-4">
-    <h2 class="mb-1">Society dashboard</h2>
-    <p class="page-subtitle mb-0">Operations overview for @Model.OverviewDate.ToString("dd-MMM-yyyy")</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Society dashboard</h2>
+        <p class="page-subtitle mb-0">Operations overview for @Model.OverviewDate.ToString("dd-MMM-yyyy")</p>
+    </div>
+    <partial name="_DashboardDateFilter" model="Model.OverviewDate" />
 </div>
 
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="card kpi-card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small text-uppercase">Milk collected today</div>
+                <div class="text-muted small text-uppercase">Milk collected</div>
                 <div class="fs-3 fw-semibold">@Model.TodayMilkLitres.ToString("0.00") L</div>
             </div>
         </div>
@@ -20,7 +23,7 @@
     <div class="col-md-3">
         <div class="card kpi-card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small text-uppercase">Payable today</div>
+                <div class="text-muted small text-uppercase">Payable</div>
                 <div class="fs-3 fw-semibold">₹@Model.TodayPayable.ToString("0.00")</div>
             </div>
         </div>
@@ -36,8 +39,12 @@
     <div class="col-md-3">
         <div class="card kpi-card border-0 shadow-sm h-100">
             <div class="card-body">
-                <div class="text-muted small text-uppercase">Generated settlements</div>
+                <div class="text-muted small text-uppercase">To pay (generated)</div>
                 <div class="fs-3 fw-semibold">₹@Model.PendingSettlementsAmount.ToString("0.00")</div>
+                @if (Model.CarryForwardAmount < 0)
+                {
+                    <div class="small text-muted">Carry-forward ₹@Model.CarryForwardAmount.ToString("0.00") (next week)</div>
+                }
             </div>
         </div>
     </div>
@@ -46,7 +53,7 @@
 <div class="row g-4 mb-4">
     <div class="col-lg-5">
         <div class="card h-100">
-            <div class="card-header fw-semibold">Today's shifts</div>
+            <div class="card-header fw-semibold">Shifts</div>
             <div class="card-body">
                 <div class="row g-3 text-center">
                     <div class="col-6">
@@ -81,7 +88,9 @@
 <div class="card">
     <div class="card-header fw-semibold">Last 7 days — collection trend</div>
     <div class="card-body">
-        <canvas id="trendChart" height="100"></canvas>
+        <div class="chart-frame">
+            <canvas id="trendChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -103,6 +112,8 @@
                 }]
             },
             options: {
+                responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: { y: { beginAtZero: true } }
             }

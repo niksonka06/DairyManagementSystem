@@ -21,5 +21,8 @@ namespace DairyManagementSystem.Interfaces
         // Farmer Portal
         Task<List<Payment>> GetByFarmerAsync(int farmerId, CancellationToken ct = default);
         Task<Payment?> GetByIdForFarmerAsync(int paymentId, int farmerId, CancellationToken ct = default);
+
+        Task<(decimal Amount, DateTime PeriodStart, DateTime PeriodEnd)?> GetCarryForwardAsync(
+            int farmerId, DateTime weekReferenceDate, CancellationToken ct = default);
     }
 }

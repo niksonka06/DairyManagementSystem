@@ -10,9 +10,12 @@ namespace DairyManagementSystem.Interfaces
         Task UpdateAsync(MilkRateFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task SetActiveStatusAsync(int rateId, int societyId, bool isActive, int performedByUserId, CancellationToken ct = default);
 
-        // Exposed for Stage 7 (Milk Collection) to call directly — this is
-        // the whole point of this module's existence from the rest of the
-        // system's perspective.
-        Task<MilkRate?> GetApplicableRateAsync(int societyId, decimal fatPercent, DateTime collectionDate, CancellationToken ct = default);
+        Task<MilkRate?> GetApplicableRateAsync(
+            int societyId,
+            decimal fatPercent,
+            decimal snf,
+            decimal clr,
+            DateTime collectionDate,
+            CancellationToken ct = default);
     }
 }

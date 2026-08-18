@@ -13,6 +13,7 @@ namespace DairyManagementSystem.Models.ViewModels
 
     public class FarmerSettlementDetailViewModel
     {
+        public int PaymentID { get; set; }
         public DateTime PeriodStart { get; set; }
         public DateTime PeriodEnd { get; set; }
         public decimal GrossAmount { get; set; }

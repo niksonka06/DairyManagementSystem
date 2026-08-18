@@ -116,6 +116,45 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> CarryForward(int farmerId, DateTime weekDate, CancellationToken ct)
+        {
+            var farmers = await AvailableFarmersAsync(ct);
+            if (!farmers.Any(f => f.FarmerID == farmerId))
+            {
+                return NotFound();
+            }
+
+            var carry = await _paymentService.GetCarryForwardAsync(farmerId, weekDate, ct);
+            if (carry is null)
+            {
+                return Json(new { amount = (decimal?)null });
+            }
+
+            return Json(new
+            {
+                amount = carry.Value.Amount,
+                periodStart = carry.Value.PeriodStart.ToString("dd-MMM-yyyy"),
+                periodEnd = carry.Value.PeriodEnd.ToString("dd-MMM-yyyy")
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Download(int id, CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var payment = await _paymentService.GetByIdWithinSocietyAsync(id, societyId, ct);
+            if (payment is null)
+            {
+                return NotFound();
+            }
+
+            var farmerCode = payment.Farmer?.FarmerCode ?? string.Empty;
+            var farmerName = payment.Farmer?.FullName ?? string.Empty;
+            var pdf = SettlementPdf.Generate(payment, farmerCode, farmerName);
+            return File(pdf, "application/pdf", $"Settlement_{farmerCode}_{payment.PeriodStart:yyyyMMdd}.pdf");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Recalculate(int id, CancellationToken ct)
@@ -141,7 +180,10 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             try
             {
                 await _paymentService.GenerateAsync(id, societyId, CurrentUserId(), ct);
-                TempData["Success"] = "Settlement generated. Collections and feed issues for this period are now locked.";
+                var generated = await _paymentService.GetByIdWithinSocietyAsync(id, societyId, ct);
+                TempData["Success"] = generated is not null && generated.NetAmount < 0
+                    ? "Settlement generated with a negative net. This farmer will not be paid this week — the balance will deduct from next week."
+                    : "Settlement generated. Collections and feed issues for this period are now locked.";
             }
             catch (BusinessRuleException ex)
             {

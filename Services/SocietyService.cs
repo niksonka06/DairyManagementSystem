@@ -1,3 +1,4 @@
+using DairyManagementSystem.Data.Seed;
 using DairyManagementSystem.Helpers;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
@@ -9,12 +10,18 @@ namespace DairyManagementSystem.Services
     public class SocietyService : ISocietyService
     {
         private readonly ISocietyRepository _societyRepository;
+        private readonly IMilkRateRepository _milkRateRepository;
         private readonly IAuditService _auditService;
         private readonly IUnitOfWork _unitOfWork;
 
-        public SocietyService(ISocietyRepository societyRepository, IAuditService auditService, IUnitOfWork unitOfWork)
+        public SocietyService(
+            ISocietyRepository societyRepository,
+            IMilkRateRepository milkRateRepository,
+            IAuditService auditService,
+            IUnitOfWork unitOfWork)
         {
             _societyRepository = societyRepository;
+            _milkRateRepository = milkRateRepository;
             _auditService = auditService;
             _unitOfWork = unitOfWork;
         }
@@ -52,6 +59,11 @@ namespace DairyManagementSystem.Services
             // Must save once here first so society.SocietyID gets its real
             // database-generated value before the audit entry references it.
             await _unitOfWork.SaveChangesAsync(ct);
+
+            foreach (var rate in DbInitializer.BuildRealisticRateChart(society.SocietyID))
+            {
+                _milkRateRepository.Add(rate);
+            }
 
             _auditService.Log(nameof(Society), society.SocietyID, AuditAction.Created,
                 oldValue: null,

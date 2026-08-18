@@ -22,7 +22,7 @@ namespace DairyManagementSystem.Models.ViewModels
         [Required]
         [Range(0.01, 100000, ErrorMessage = "Price must be greater than 0.")]
         [Display(Name = "Price Per Unit (₹)")]
-        public decimal PricePerUnit { get; set; }
+        public decimal? PricePerUnit { get; set; }
 
         [Required]
         [Range(0, 100000)]

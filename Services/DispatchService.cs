@@ -119,6 +119,11 @@ namespace DairyManagementSystem.Services
             await _unitOfWork.SaveChangesAsync(ct);
         }
 
+        public async Task<decimal> GetCollectedLitresAsync(int societyId, DateTime date, CancellationToken ct = default)
+        {
+            return await _collectionRepository.GetTotalQuantityBySocietyAndDateAsync(societyId, date.Date, ct);
+        }
+
         private void EnsureVarianceReasonIfNeeded(decimal totalCollected, decimal totalDispatched, string? reason)
         {
             var variance = totalCollected - totalDispatched;

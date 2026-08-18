@@ -76,15 +76,17 @@ namespace DairyManagementSystem.Services
             // that commits independently, like Identity's UserManager —
             // not the case here.
 
+            var quantity = model.Quantity!.Value;
+
             // 1. CHECK STOCK
-            if (item.StockQuantity < model.Quantity)
+            if (item.StockQuantity < quantity)
             {
                 throw new BusinessRuleException(
-                    $"Insufficient stock for '{item.FeedName}'. Available: {item.StockQuantity} {item.Unit}, requested: {model.Quantity} {item.Unit}.");
+                    $"Insufficient stock for '{item.FeedName}'. Available: {item.StockQuantity} {item.Unit}, requested: {quantity} {item.Unit}.");
             }
 
             // 2. DEDUCT STOCK
-            item.StockQuantity -= model.Quantity;
+            item.StockQuantity -= quantity;
 
             // 3. CREATE FARMER ISSUE RECORD (+ 4. DEDUCTION, captured on the same row via TotalCost)
             var issue = new FeedIssue
@@ -93,9 +95,9 @@ namespace DairyManagementSystem.Services
                 FarmerID = farmer.FarmerID,
                 SocietyID = model.SocietyID,
                 ItemType = item.ItemType,
-                Quantity = model.Quantity,
+                Quantity = quantity,
                 UnitPriceAtIssue = item.PricePerUnit, // snapshot — see FeedIssue class comment
-                TotalCost = model.Quantity * item.PricePerUnit,
+                TotalCost = quantity * item.PricePerUnit,
                 IssueDate = model.IssueDate.Date,
                 IssuedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,

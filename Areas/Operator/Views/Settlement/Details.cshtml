@@ -33,7 +33,7 @@
     <div class="alert alert-danger">Cancelled — Reason: @Model.CancellationReason</div>
 }
 
-<table class="table w-auto">
+<table class="table w-auto js-no-filter">
     <tr><th>Gross Amount</th><td>₹@Model.GrossAmount.ToString("0.00")</td></tr>
     <tr><th>Feed Deduction</th><td>−₹@Model.FeedDeduction.ToString("0.00")</td></tr>
     <tr><th>Medicine Deduction</th><td>−₹@Model.MedicineDeduction.ToString("0.00")</td></tr>
@@ -41,12 +41,18 @@
     {
         <tr><th>@line.Type Deduction</th><td>−₹@line.Amount.ToString("0.00")</td></tr>
     }
-    <tr><th>Previous Due</th><td>+₹@Model.PreviousDue.ToString("0.00")</td></tr>
+    <tr><th>Carry-forward</th><td>₹@Model.PreviousDue.ToString("0.00")</td></tr>
     <tr><th>Advance Paid</th><td>−₹@Model.AdvancePaid.ToString("0.00")</td></tr>
     <tr class="table-active"><th>Net Amount</th><td><strong>₹@Model.NetAmount.ToString("0.00")</strong></td></tr>
 </table>
 
+@if (Model.NetAmount < 0)
+{
+    <div class="alert alert-warning">This farmer’s net is negative. Do not pay this week — the balance will be deducted from next week’s settlement.</div>
+}
+
 <div class="mb-3">
+    <a asp-action="Download" asp-route-id="@Model.PaymentID" class="btn btn-outline-primary">Download report</a>
     @if (Model.Status == SettlementStatus.Draft)
     {
         <form asp-action="Recalculate" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
@@ -62,7 +68,7 @@
     else if (Model.Status == SettlementStatus.Generated)
     {
         <form asp-action="MarkPaid" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
-            <button type="submit" class="btn btn-success">Mark as Paid</button>
+            <button type="submit" class="btn btn-success">@(Model.NetAmount < 0 ? "Close period (carry to next week)" : "Mark as Paid")</button>
         </form>
         <p class="text-muted mt-2">To correct a generated settlement, an Admin must unlock it (Admin area → Unlock Settlements), which requires a reason and is fully audited.</p>
     }

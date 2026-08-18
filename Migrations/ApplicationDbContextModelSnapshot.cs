@@ -538,10 +538,19 @@ namespace DairyManagementSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RateID"));
 
+                    b.Property<decimal>("ClrFrom")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal>("ClrTo")
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<DateTime>("EffectiveFrom")
                         .HasColumnType("date");
 
-                    b.Property<decimal>("FatPercent")
+                    b.Property<decimal>("FatPercentFrom")
+                        .HasColumnType("decimal(4,2)");
+
+                    b.Property<decimal>("FatPercentTo")
                         .HasColumnType("decimal(4,2)");
 
                     b.Property<bool>("IsActive")
@@ -556,19 +565,40 @@ namespace DairyManagementSystem.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
+                    b.Property<decimal>("SnfPercentFrom")
+                        .HasColumnType("decimal(4,2)");
+
+                    b.Property<decimal>("SnfPercentTo")
+                        .HasColumnType("decimal(4,2)");
+
                     b.Property<int>("SocietyID")
                         .HasColumnType("int");
 
                     b.HasKey("RateID");
 
-                    b.HasIndex("SocietyID", "FatPercent", "EffectiveFrom")
-                        .IsUnique();
+                    b.HasIndex("SocietyID", "EffectiveFrom");
 
                     b.ToTable("MilkRates", t =>
                         {
-                            t.HasCheckConstraint("CK_MilkRates_FatPercent", "[FatPercent] BETWEEN 2.5 AND 9.0");
+                            t.HasCheckConstraint("CK_MilkRates_ClrFrom", "[ClrFrom] BETWEEN 0 AND 50");
+
+                            t.HasCheckConstraint("CK_MilkRates_ClrRange", "[ClrFrom] <= [ClrTo]");
+
+                            t.HasCheckConstraint("CK_MilkRates_ClrTo", "[ClrTo] BETWEEN 0 AND 50");
+
+                            t.HasCheckConstraint("CK_MilkRates_FatPercentFrom", "[FatPercentFrom] BETWEEN 2.5 AND 9.0");
+
+                            t.HasCheckConstraint("CK_MilkRates_FatPercentTo", "[FatPercentTo] BETWEEN 2.5 AND 9.0");
+
+                            t.HasCheckConstraint("CK_MilkRates_FatRange", "[FatPercentFrom] <= [FatPercentTo]");
 
                             t.HasCheckConstraint("CK_MilkRates_RatePerLitre", "[RatePerLitre] > 0");
+
+                            t.HasCheckConstraint("CK_MilkRates_SnfPercentFrom", "[SnfPercentFrom] BETWEEN 7.5 AND 11.0");
+
+                            t.HasCheckConstraint("CK_MilkRates_SnfPercentTo", "[SnfPercentTo] BETWEEN 7.5 AND 11.0");
+
+                            t.HasCheckConstraint("CK_MilkRates_SnfRange", "[SnfPercentFrom] <= [SnfPercentTo]");
                         });
                 });
 
@@ -888,6 +918,16 @@ namespace DairyManagementSystem.Migrations
                     b.Navigation("RecordedByUser");
                 });
 
+            modelBuilder.Entity("DairyManagementSystem.Models.Entities.ApplicationUser", b =>
+                {
+                    b.HasOne("DairyManagementSystem.Models.Entities.Society", "Society")
+                        .WithMany()
+                        .HasForeignKey("SocietyID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Society");
+                });
+
             modelBuilder.Entity("DairyManagementSystem.Models.Entities.AuditLog", b =>
                 {
                     b.HasOne("DairyManagementSystem.Models.Entities.ApplicationUser", "PerformedByUser")
@@ -1056,16 +1096,6 @@ namespace DairyManagementSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Payment");
-                });
-
-            modelBuilder.Entity("DairyManagementSystem.Models.Entities.ApplicationUser", b =>
-                {
-                    b.HasOne("DairyManagementSystem.Models.Entities.Society", "Society")
-                        .WithMany()
-                        .HasForeignKey("SocietyID")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Society");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>

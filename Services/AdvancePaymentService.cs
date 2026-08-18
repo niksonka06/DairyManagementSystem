@@ -47,7 +47,7 @@ namespace DairyManagementSystem.Services
             {
                 FarmerID = model.FarmerID,
                 SocietyID = model.SocietyID,
-                Amount = model.Amount,
+                Amount = model.Amount!.Value,
                 PaymentDate = model.PaymentDate.Date,
                 RecordedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,

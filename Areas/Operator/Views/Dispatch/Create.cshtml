@@ -34,10 +34,16 @@
     </div>
 
     <div class="mb-3">
+        <label asp-for="TotalCollected" class="form-label"></label>
+        <input asp-for="TotalCollected" class="form-control" type="number" step="0.01" readonly tabindex="-1" />
+        <div class="form-text">Sum of milk collections for the dispatch date. Updates when you change the date.</div>
+    </div>
+
+    <div class="mb-3">
         <label asp-for="TotalDispatched" class="form-label"></label>
-        <input asp-for="TotalDispatched" class="form-control" type="number" step="0.01" min="0.01" />
+        <input asp-for="TotalDispatched" class="form-control" type="number" step="0.01" min="0.01" data-autofill-dispatched="true" />
         <span asp-validation-for="TotalDispatched" class="text-danger"></span>
-        <div class="form-text">Total collected for this date is calculated automatically once you submit.</div>
+        <div class="form-text">Filled from collected litres. Change it if the tanker reading is different.</div>
     </div>
 
     <div class="mb-3">
@@ -53,4 +59,5 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <partial name="_DispatchCollectedScript" />
 }

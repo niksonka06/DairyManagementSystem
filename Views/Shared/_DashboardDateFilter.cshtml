@@ -1,0 +1,8 @@
+@model DateTime
+<form method="get" class="d-flex gap-2 align-items-end">
+    <div>
+        <label class="form-label small mb-1">Date</label>
+        <input type="date" name="date" class="form-control" value="@Model.ToString("yyyy-MM-dd")" />
+    </div>
+    <button type="submit" class="btn btn-outline-primary">Go</button>
+</form>

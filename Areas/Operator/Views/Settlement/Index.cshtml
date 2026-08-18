@@ -50,6 +50,7 @@
                 </td>
                 <td class="text-end">
                     <a asp-action="Details" asp-route-id="@p.PaymentID" class="btn btn-sm btn-outline-primary">View</a>
+                    <a asp-action="Download" asp-route-id="@p.PaymentID" class="btn btn-sm btn-outline-secondary">PDF</a>
                 </td>
             </tr>
         }

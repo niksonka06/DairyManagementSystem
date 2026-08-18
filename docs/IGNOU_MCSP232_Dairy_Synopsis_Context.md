@@ -11,7 +11,7 @@
 
 ## Document Title
 
-**Smart Dairy Cooperative Management System for Milk Collection and Farmer Settlement using ASP.NET Core MVC**
+**Smart Dairy Cooperative Management System for Milk Collection and Farmer Settlement using ASP.NET Core MVC**dotne
 
 ---
 
@@ -22,7 +22,7 @@ Local dairy cooperative societies in India continue to manage milk collection, f
 The objective is to design and develop a **Smart Dairy Cooperative Management System** — a centralised web application that digitises the complete operational workflow of a dairy cooperative society:
 
 - Daily milk collection (morning and evening shifts)
-- Automatic fat-based payment calculation
+- Automatic fat/SNF/CLR payment calculation
 - Feed and medicine deductions
 - Weekly farmer settlements
 - Milk dispatch tracking to higher dairy unions
@@ -64,7 +64,7 @@ A centralised ASP.NET Core MVC web application digitising society operations fro
 
 1. Digitise dairy cooperative society operations; eliminate paper-based records and manual calculations.
 2. Automate daily milk collection for morning/evening shifts (quantity, fat %, SNF, CLR).
-3. Implement a configurable fat-based rate chart for automatic payment calculation.
+3. Implement a configurable fat/SNF/CLR rate chart for automatic payment calculation.
 4. Calculate weekly farmer settlements after feed, medicine, and other deductions.
 5. Manage feed/medicine inventory with farmer-wise distribution and automatic settlement deductions.
 6. Track milk dispatch to higher dairy unions (vehicle, destination, timing).
@@ -143,7 +143,7 @@ Manual rate lookups, arithmetic, register consolidation, and handwritten settlem
 #### Farmer Portal
 
 - Login with operator-created credentials
-- View daily milk history: date, shift, quantity, fat %, SNF, rate, amount
+- View daily milk history: date, shift, quantity, fat %, SNF, CLR, rate, amount
 - View weekly settlements: gross, deductions, net payment
 - View feed/medicine deductions per period
 - View payment history and status
@@ -177,7 +177,7 @@ Enterprise systems (AMUL, NDDB) are not suited to small village societies. Digit
 ### In scope
 
 - Society-level morning/evening milk collection with **shift closing and finalization**
-- Automatic fat-based rate calculation (configurable rate charts)
+- Automatic fat/SNF/CLR rate calculation (configurable rate charts)
 - Farmer profiles, bank details, society mapping, secure portal access
 - Feed and medicine inventory with farmer-wise deduction tracking
 - Automated weekly settlement generation
@@ -288,7 +288,7 @@ Designed in **Third Normal Form (3NF)** with PK/FK, NOT NULL, CHECK constraints,
 **Business rules:**
 
 - `Amount = Quantity × RatePerLitre`
-- Rate is looked up from fat-based chart at entry time and **snapshotted** (never recalculated retroactively)
+- Rate is looked up from the fat/SNF/CLR chart at entry time and **snapshotted** (never recalculated retroactively)
 - Duplicate prevention: one entry per farmer + date + shift
 - Locked records cannot be edited except via admin unlock (audited)
 
@@ -298,7 +298,12 @@ Designed in **Third Normal Form (3NF)** with PK/FK, NOT NULL, CHECK constraints,
 |-------|------|-------------|-------------|
 | RateID | INT IDENTITY | PK | Rate entry ID |
 | SocietyID | INT | FK → Societies, NOT NULL | Society |
-| FatPercent | DECIMAL(4,2) | NOT NULL, CHECK 2.5–9.0 | Fat % for this row |
+| FatPercentFrom | DECIMAL(4,2) | NOT NULL, CHECK 2.5–9.0 | Fat % band start |
+| FatPercentTo | DECIMAL(4,2) | NOT NULL, CHECK 2.5–9.0 | Fat % band end |
+| SnfPercentFrom | DECIMAL(4,2) | NOT NULL, CHECK 7.5–11.0 | SNF band start |
+| SnfPercentTo | DECIMAL(4,2) | NOT NULL, CHECK 7.5–11.0 | SNF band end |
+| ClrFrom | DECIMAL(5,2) | NOT NULL, CHECK 0–50 | CLR band start |
+| ClrTo | DECIMAL(5,2) | NOT NULL, CHECK 0–50 | CLR band end |
 | RatePerLitre | DECIMAL(8,2) | NOT NULL, CHECK > 0 | INR per litre |
 | EffectiveFrom | DATE | NOT NULL | Valid from date |
 | IsActive | BIT | NOT NULL, DEFAULT 1 | Active flag |
@@ -425,7 +430,7 @@ Also: dispatch date/time, vehicle, destination, society, recorded by.
 | Structure | Purpose |
 |-----------|---------|
 | **MilkCollectionViewModel** | `{ FarmerID, Date, Shift, Quantity, FatPercent, SNF, CLR, RatePerLitre, Amount }` |
-| **RateChartEntry** | `{ FatPercent, RatePerLitre, EffectiveFrom }` |
+| **RateChartEntry** | `{ FatPercentFrom, FatPercentTo, SnfPercentFrom, SnfPercentTo, ClrFrom, ClrTo, RatePerLitre, EffectiveFrom }` |
 | **SettlementDTO** | `{ FarmerID, PeriodStart, PeriodEnd, GrossAmount, FeedDeduction, MedicineDeduction, OtherDeductions, OpeningBalance, PreviousDue, AdvancePaid, ClosingBalance, NetAmount, Status }` |
 | **FarmerPortalSummary** | `{ FarmerName, TotalMilkThisMonth, AverageFat, LastSettlementAmount, PendingDeductions }` |
 | **AuditEntry** | `{ EntityType, EntityID, Action, OldValue, NewValue, PerformedBy, Timestamp }` |
@@ -514,7 +519,7 @@ When a settlement reaches **Generated** (or higher):
 
 **Farmer → Local Dairy Society → Higher Dairy Union**
 
-Digitise collection and quality, auto-calculate fat-based payments, manage deductions, generate weekly settlements, track dispatch, and give farmers transparent access to their own records.
+Digitise collection and quality, auto-calculate fat/SNF/CLR payments, manage deductions, generate weekly settlements, track dispatch, and give farmers transparent access to their own records.
 
 ---
 

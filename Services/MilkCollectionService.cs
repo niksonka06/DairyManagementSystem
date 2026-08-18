@@ -80,12 +80,17 @@ namespace DairyManagementSystem.Services
                     "Edit the existing entry instead of creating a new one.");
             }
 
-            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, model.FatPercent, collectionDate, ct);
+            var quantity = model.Quantity!.Value;
+            var fatPercent = model.FatPercent!.Value;
+            var snf = model.SNF!.Value;
+            var clr = model.CLR!.Value;
+
+            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, fatPercent, snf, clr, collectionDate, ct);
             if (applicableRate is null)
             {
                 throw new BusinessRuleException(
-                    $"No applicable rate found for {model.FatPercent}% fat on {collectionDate:dd-MMM-yyyy}. " +
-                    "Check the Milk Rate Chart for this society.");
+                    $"No applicable rate found for {fatPercent}% fat, {snf} SNF, {clr} CLR on {collectionDate:dd-MMM-yyyy}. " +
+                    "Add a matching fat/SNF/CLR band on the Milk Rate Chart.");
             }
 
             var collection = new MilkCollection
@@ -94,12 +99,12 @@ namespace DairyManagementSystem.Services
                 SocietyID = model.SocietyID,
                 CollectionDate = collectionDate,
                 Shift = model.Shift,
-                Quantity = model.Quantity,
-                FatPercent = model.FatPercent,
-                SNF = model.SNF,
-                CLR = model.CLR,
+                Quantity = quantity,
+                FatPercent = fatPercent,
+                SNF = snf,
+                CLR = clr,
                 RatePerLitre = applicableRate.RatePerLitre, // snapshot — see class comment on MilkCollection
-                Amount = model.Quantity * applicableRate.RatePerLitre,
+                Amount = quantity * applicableRate.RatePerLitre,
                 RecordedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,
                 IsLocked = false
@@ -155,30 +160,30 @@ namespace DairyManagementSystem.Services
                     $"A {model.Shift} collection for this farmer on {collectionDate:dd-MMM-yyyy} already exists.");
             }
 
-            // Fat% (and possibly date) may have changed via this correction —
-            // re-resolve the rate rather than keeping the original, since a
-            // wrong fat% entry would have produced a wrong rate the first
-            // time. This is a deliberate design choice: a genuine correction
-            // should correct its downstream effects too, not just the raw
-            // input field. (Once locked by settlement, none of this is
-            // reachable anyway — see the IsLocked check above.)
-            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, model.FatPercent, collectionDate, ct);
+            // Quality (and possibly date) may have changed via this correction —
+            // re-resolve the rate rather than keeping the original.
+            var quantity = model.Quantity!.Value;
+            var fatPercent = model.FatPercent!.Value;
+            var snf = model.SNF!.Value;
+            var clr = model.CLR!.Value;
+
+            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, fatPercent, snf, clr, collectionDate, ct);
             if (applicableRate is null)
             {
                 throw new BusinessRuleException(
-                    $"No applicable rate found for {model.FatPercent}% fat on {collectionDate:dd-MMM-yyyy}.");
+                    $"No applicable rate found for {fatPercent}% fat, {snf} SNF, {clr} CLR on {collectionDate:dd-MMM-yyyy}.");
             }
 
             var oldSnapshot = new { collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount };
 
             collection.CollectionDate = collectionDate;
             collection.Shift = model.Shift;
-            collection.Quantity = model.Quantity;
-            collection.FatPercent = model.FatPercent;
-            collection.SNF = model.SNF;
-            collection.CLR = model.CLR;
+            collection.Quantity = quantity;
+            collection.FatPercent = fatPercent;
+            collection.SNF = snf;
+            collection.CLR = clr;
             collection.RatePerLitre = applicableRate.RatePerLitre;
-            collection.Amount = model.Quantity * applicableRate.RatePerLitre;
+            collection.Amount = quantity * applicableRate.RatePerLitre;
 
             _collectionRepository.SetOriginalRowVersion(collection, model.RowVersion!);
 

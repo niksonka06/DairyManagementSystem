@@ -1,0 +1,27 @@
+@{
+    var homeArea = User.IsInRole("Admin") ? "Admin"
+        : User.IsInRole("Operator") ? "Operator"
+        : User.IsInRole("Farmer") ? "Farmer" : "";
+    var hasDashboard = !string.IsNullOrEmpty(homeArea);
+}
+
+@if (hasDashboard)
+{
+    <a class="sidebar-brand text-decoration-none" asp-area="@homeArea" asp-controller="Home" asp-action="Index">
+        <img src="~/images/logo_icon.png" alt="Smart Dairy Cooperative" class="brand-logo-img" />
+        <div>
+            <div class="sidebar-brand-title">Smart Dairy</div>
+            <div class="sidebar-brand-sub">Cooperative Management</div>
+        </div>
+    </a>
+}
+else
+{
+    <div class="sidebar-brand">
+        <img src="~/images/logo_icon.png" alt="Smart Dairy Cooperative" class="brand-logo-img" />
+        <div>
+            <div class="sidebar-brand-title">Smart Dairy</div>
+            <div class="sidebar-brand-sub">Cooperative Management</div>
+        </div>
+    </div>
+}
