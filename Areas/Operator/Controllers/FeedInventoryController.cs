@@ -20,12 +20,12 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _feedInventoryService = feedInventoryService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var items = await _feedInventoryService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = items.Select(f => new FeedInventoryListItemViewModel
+            var all = items.Select(f => new FeedInventoryListItemViewModel
             {
                 FeedItemID = f.FeedItemID,
                 ItemType = f.ItemType,
@@ -36,6 +36,22 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 LowStockThreshold = f.LowStockThreshold,
                 IsActive = f.IsActive
             }).ToList();
+
+            ViewBag.LowStockCount = all.Count(m => m.IsLowStock && m.IsActive);
+
+            var viewModel = ListPaging.Apply(
+                all, sort, dir, page,
+                new Dictionary<string, Func<FeedInventoryListItemViewModel, object?>>
+                {
+                    ["type"] = f => f.ItemType.ToString(),
+                    ["name"] = f => f.FeedName,
+                    ["unit"] = f => f.Unit,
+                    ["price"] = f => f.PricePerUnit,
+                    ["stock"] = f => f.StockQuantity,
+                    ["status"] = f => f.IsActive
+                },
+                defaultSort: "name",
+                activeFirst: f => f.IsActive);
 
             return View(viewModel);
         }

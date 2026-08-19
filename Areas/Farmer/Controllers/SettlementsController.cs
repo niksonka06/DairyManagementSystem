@@ -24,7 +24,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var farmer = await CurrentFarmerAsync(ct);
             if (farmer is null)
@@ -34,16 +34,26 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             var settlements = await _paymentService.GetByFarmerAsync(farmer.FarmerID, ct);
 
-            var model = settlements
-                .Where(p => p.Status != SettlementStatus.Draft)
-                .Select(p => new FarmerSettlementRowViewModel
-            {
-                PaymentID = p.PaymentID,
-                PeriodStart = p.PeriodStart,
-                PeriodEnd = p.PeriodEnd,
-                NetAmount = p.NetAmount,
-                Status = p.Status
-            }).ToList();
+            var model = ListPaging.Apply(
+                settlements
+                    .Where(p => p.Status != SettlementStatus.Draft)
+                    .Select(p => new FarmerSettlementRowViewModel
+                    {
+                        PaymentID = p.PaymentID,
+                        PeriodStart = p.PeriodStart,
+                        PeriodEnd = p.PeriodEnd,
+                        NetAmount = p.NetAmount,
+                        Status = p.Status
+                    }),
+                sort, dir, page,
+                new Dictionary<string, Func<FarmerSettlementRowViewModel, object?>>
+                {
+                    ["period"] = s => s.PeriodStart,
+                    ["amount"] = s => s.NetAmount,
+                    ["status"] = s => s.Status.ToString()
+                },
+                defaultSort: "period",
+                defaultDesc: true);
 
             return View(model);
         }

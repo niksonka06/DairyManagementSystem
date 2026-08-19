@@ -1,3 +1,4 @@
+using DairyManagementSystem.Helpers;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
@@ -23,7 +24,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(DateTime? from, DateTime? to, CancellationToken ct)
+        public async Task<IActionResult> Index(DateTime? from, DateTime? to, string? sort, string? dir, int page, CancellationToken ct)
         {
             var farmer = await CurrentFarmerAsync(ct);
             if (farmer is null)
@@ -36,7 +37,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             var collections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, effectiveFrom, effectiveTo, ct);
 
-            var model = collections.Select(c => new FarmerCollectionRowViewModel
+            var rows = collections.Select(c => new FarmerCollectionRowViewModel
             {
                 CollectionDate = c.CollectionDate,
                 Shift = c.Shift,
@@ -51,6 +52,30 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             ViewBag.FromDate = effectiveFrom;
             ViewBag.ToDate = effectiveTo;
+            ViewBag.TotalQuantity = rows.Sum(r => r.Quantity);
+            ViewBag.TotalAmount = rows.Sum(r => r.Amount);
+
+            var model = ListPaging.Apply(
+                rows, sort, dir, page,
+                new Dictionary<string, Func<FarmerCollectionRowViewModel, object?>>
+                {
+                    ["date"] = r => r.CollectionDate,
+                    ["shift"] = r => r.Shift.ToString(),
+                    ["qty"] = r => r.Quantity,
+                    ["fat"] = r => r.FatPercent,
+                    ["snf"] = r => r.SNF,
+                    ["clr"] = r => r.CLR,
+                    ["rate"] = r => r.RatePerLitre,
+                    ["amount"] = r => r.Amount,
+                    ["status"] = r => r.IsLocked
+                },
+                defaultSort: "date",
+                defaultDesc: true,
+                extraRoute: new Dictionary<string, string?>
+                {
+                    ["from"] = effectiveFrom.ToString("yyyy-MM-dd"),
+                    ["to"] = effectiveTo.ToString("yyyy-MM-dd")
+                });
 
             return View(model);
         }

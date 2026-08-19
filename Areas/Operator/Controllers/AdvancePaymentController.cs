@@ -21,20 +21,31 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _farmerService = farmerService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var advances = await _advancePaymentService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = advances.Select(a => new AdvancePaymentListItemViewModel
-            {
-                AdvancePaymentID = a.AdvancePaymentID,
-                FarmerCode = a.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = a.Farmer?.FullName ?? string.Empty,
-                Amount = a.Amount,
-                PaymentDate = a.PaymentDate,
-                IsApplied = a.IsApplied
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                advances.Select(a => new AdvancePaymentListItemViewModel
+                {
+                    AdvancePaymentID = a.AdvancePaymentID,
+                    FarmerCode = a.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = a.Farmer?.FullName ?? string.Empty,
+                    Amount = a.Amount,
+                    PaymentDate = a.PaymentDate,
+                    IsApplied = a.IsApplied
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<AdvancePaymentListItemViewModel, object?>>
+                {
+                    ["date"] = a => a.PaymentDate,
+                    ["farmer"] = a => a.FarmerCode + " " + a.FarmerName,
+                    ["amount"] = a => a.Amount,
+                    ["status"] = a => a.IsApplied
+                },
+                defaultSort: "date",
+                defaultDesc: true);
 
             return View(viewModel);
         }

@@ -72,7 +72,7 @@
     }
 
     main.querySelectorAll('table.table').forEach(function (table) {
-        if (table.classList.contains('js-no-filter') || table.closest('.js-no-filter')) {
+        if (table.classList.contains('js-no-filter') || table.closest('.js-no-filter') || table.closest('.js-paged-table')) {
             return;
         }
 

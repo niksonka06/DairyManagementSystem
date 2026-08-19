@@ -22,21 +22,33 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var payments = await _paymentService.GetGeneratedAcrossAllSocietiesAsync(ct);
 
-            var viewModel = payments.Select(p => new SettlementUnlockListItemViewModel
-            {
-                PaymentID = p.PaymentID,
-                SocietyName = p.Society?.SocietyName ?? string.Empty,
-                FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = p.Farmer?.FullName ?? string.Empty,
-                PeriodStart = p.PeriodStart,
-                PeriodEnd = p.PeriodEnd,
-                NetAmount = p.NetAmount,
-                GeneratedAt = p.GeneratedAt
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                payments.Select(p => new SettlementUnlockListItemViewModel
+                {
+                    PaymentID = p.PaymentID,
+                    SocietyName = p.Society?.SocietyName ?? string.Empty,
+                    FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = p.Farmer?.FullName ?? string.Empty,
+                    PeriodStart = p.PeriodStart,
+                    PeriodEnd = p.PeriodEnd,
+                    NetAmount = p.NetAmount,
+                    GeneratedAt = p.GeneratedAt
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<SettlementUnlockListItemViewModel, object?>>
+                {
+                    ["society"] = p => p.SocietyName,
+                    ["farmer"] = p => p.FarmerCode + " " + p.FarmerName,
+                    ["period"] = p => p.PeriodStart,
+                    ["amount"] = p => p.NetAmount,
+                    ["generated"] = p => p.GeneratedAt
+                },
+                defaultSort: "generated",
+                defaultDesc: true);
 
             return View(viewModel);
         }

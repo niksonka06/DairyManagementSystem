@@ -20,19 +20,30 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _farmerService = farmerService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var farmers = await _farmerService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = farmers.Select(f => new FarmerListItemViewModel
-            {
-                FarmerID = f.FarmerID,
-                FarmerCode = f.FarmerCode,
-                FullName = f.FullName,
-                Phone = f.Phone,
-                IsActive = f.IsActive
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                farmers.Select(f => new FarmerListItemViewModel
+                {
+                    FarmerID = f.FarmerID,
+                    FarmerCode = f.FarmerCode,
+                    FullName = f.FullName,
+                    Phone = f.Phone,
+                    IsActive = f.IsActive
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<FarmerListItemViewModel, object?>>
+                {
+                    ["code"] = f => f.FarmerCode,
+                    ["name"] = f => f.FullName,
+                    ["phone"] = f => f.Phone,
+                    ["status"] = f => f.IsActive
+                },
+                defaultSort: "name",
+                activeFirst: f => f.IsActive);
 
             return View(viewModel);
         }

@@ -20,24 +20,37 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _dispatchService = dispatchService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var dispatches = await _dispatchService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = dispatches.Select(d => new DispatchListItemViewModel
-            {
-                DispatchID = d.DispatchID,
-                DispatchDate = d.DispatchDate,
-                DispatchTime = d.DispatchTime,
-                VehicleNo = d.VehicleNo,
-                Destination = d.Destination,
-                TotalCollected = d.TotalCollected,
-                TotalDispatched = d.TotalDispatched,
-                Variance = d.Variance,
-                VariancePercent = d.VariancePercent,
-                VarianceReason = d.VarianceReason
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                dispatches.Select(d => new DispatchListItemViewModel
+                {
+                    DispatchID = d.DispatchID,
+                    DispatchDate = d.DispatchDate,
+                    DispatchTime = d.DispatchTime,
+                    VehicleNo = d.VehicleNo,
+                    Destination = d.Destination,
+                    TotalCollected = d.TotalCollected,
+                    TotalDispatched = d.TotalDispatched,
+                    Variance = d.Variance,
+                    VariancePercent = d.VariancePercent,
+                    VarianceReason = d.VarianceReason
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<DispatchListItemViewModel, object?>>
+                {
+                    ["date"] = d => d.DispatchDate,
+                    ["vehicle"] = d => d.VehicleNo,
+                    ["dest"] = d => d.Destination,
+                    ["collected"] = d => d.TotalCollected,
+                    ["dispatched"] = d => d.TotalDispatched,
+                    ["variance"] = d => d.Variance
+                },
+                defaultSort: "date",
+                defaultDesc: true);
 
             return View(viewModel);
         }

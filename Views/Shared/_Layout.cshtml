@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="@(User.Identity?.IsAuthenticated == true ? "app-body" : "public-body")">
+<body class="@(User.Identity?.IsAuthenticated == true ? "app-body" : "public-body")@(ViewData["FillViewport"] as bool? == true ? " fill-viewport" : "")">
     @if (User.Identity?.IsAuthenticated == true)
     {
         <button class="sidebar-toggle btn" type="button" id="sidebarToggle" aria-label="Toggle navigation">
@@ -27,9 +27,12 @@
                 <div class="app-content">
                     @RenderBody()
                 </div>
-                <footer class="app-footer text-muted">
-                    &copy; @DateTime.Now.Year Smart Dairy Cooperative Management System &mdash;
-                </footer>
+                @if (ViewData["FillViewport"] as bool? != true)
+                {
+                    <footer class="app-footer text-muted">
+                        &copy; @DateTime.Now.Year Smart Dairy Cooperative Management System;
+                    </footer>
+                }
             </main>
         </div>
     }

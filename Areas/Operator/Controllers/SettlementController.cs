@@ -27,21 +27,32 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _advancePaymentService = advancePaymentService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var payments = await _paymentService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = payments.Select(p => new SettlementListItemViewModel
-            {
-                PaymentID = p.PaymentID,
-                FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = p.Farmer?.FullName ?? string.Empty,
-                PeriodStart = p.PeriodStart,
-                PeriodEnd = p.PeriodEnd,
-                NetAmount = p.NetAmount,
-                Status = p.Status
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                payments.Select(p => new SettlementListItemViewModel
+                {
+                    PaymentID = p.PaymentID,
+                    FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = p.Farmer?.FullName ?? string.Empty,
+                    PeriodStart = p.PeriodStart,
+                    PeriodEnd = p.PeriodEnd,
+                    NetAmount = p.NetAmount,
+                    Status = p.Status
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<SettlementListItemViewModel, object?>>
+                {
+                    ["period"] = p => p.PeriodStart,
+                    ["farmer"] = p => p.FarmerCode + " " + p.FarmerName,
+                    ["amount"] = p => p.NetAmount,
+                    ["status"] = p => p.Status.ToString()
+                },
+                defaultSort: "period",
+                defaultDesc: true);
 
             return View(viewModel);
         }

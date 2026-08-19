@@ -24,23 +24,35 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var operators = await _userManagementService.GetOperatorsAsync(ct);
             var societies = await _societyService.GetAllAsync(ct);
             var societyNameById = societies.ToDictionary(s => s.SocietyID, s => s.SocietyName);
 
-            var viewModel = operators.Select(o => new OperatorListItemViewModel
-            {
-                UserId = o.Id,
-                StaffCode = o.StaffCode ?? "—",
-                FullName = o.FullName,
-                Email = o.Email ?? string.Empty,
-                SocietyName = o.SocietyID.HasValue && societyNameById.TryGetValue(o.SocietyID.Value, out var name)
-                    ? name
-                    : "(unassigned)",
-                IsActive = o.IsActive
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                operators.Select(o => new OperatorListItemViewModel
+                {
+                    UserId = o.Id,
+                    StaffCode = o.StaffCode ?? "—",
+                    FullName = o.FullName,
+                    Email = o.Email ?? string.Empty,
+                    SocietyName = o.SocietyID.HasValue && societyNameById.TryGetValue(o.SocietyID.Value, out var name)
+                        ? name
+                        : "(unassigned)",
+                    IsActive = o.IsActive
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<OperatorListItemViewModel, object?>>
+                {
+                    ["code"] = o => o.StaffCode,
+                    ["name"] = o => o.FullName,
+                    ["email"] = o => o.Email,
+                    ["society"] = o => o.SocietyName,
+                    ["status"] = o => o.IsActive
+                },
+                defaultSort: "name",
+                activeFirst: o => o.IsActive);
 
             return View(viewModel);
         }

@@ -27,22 +27,35 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _farmerService = farmerService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var issues = await _feedIssueService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = issues.Select(i => new FeedIssueListItemViewModel
-            {
-                IssueID = i.IssueID,
-                FarmerCode = i.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = i.Farmer?.FullName ?? string.Empty,
-                ItemType = i.ItemType,
-                FeedName = i.FeedItem?.FeedName ?? string.Empty,
-                Quantity = i.Quantity,
-                TotalCost = i.TotalCost,
-                IssueDate = i.IssueDate
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                issues.Select(i => new FeedIssueListItemViewModel
+                {
+                    IssueID = i.IssueID,
+                    FarmerCode = i.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = i.Farmer?.FullName ?? string.Empty,
+                    ItemType = i.ItemType,
+                    FeedName = i.FeedItem?.FeedName ?? string.Empty,
+                    Quantity = i.Quantity,
+                    TotalCost = i.TotalCost,
+                    IssueDate = i.IssueDate
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<FeedIssueListItemViewModel, object?>>
+                {
+                    ["date"] = i => i.IssueDate,
+                    ["farmer"] = i => i.FarmerCode + " " + i.FarmerName,
+                    ["type"] = i => i.ItemType.ToString(),
+                    ["item"] = i => i.FeedName,
+                    ["qty"] = i => i.Quantity,
+                    ["cost"] = i => i.TotalCost
+                },
+                defaultSort: "date",
+                defaultDesc: true);
 
             return View(viewModel);
         }

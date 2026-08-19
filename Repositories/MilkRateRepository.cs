@@ -15,7 +15,8 @@ namespace DairyManagementSystem.Repositories
         {
             return await DbSet.AsNoTracking()
                 .Where(r => r.SocietyID == societyId)
-                .OrderByDescending(r => r.EffectiveFrom)
+                .OrderByDescending(r => r.IsActive)
+                .ThenByDescending(r => r.EffectiveFrom)
                 .ThenBy(r => r.FatPercentFrom)
                 .ThenBy(r => r.SnfPercentFrom)
                 .ThenBy(r => r.ClrFrom)

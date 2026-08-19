@@ -20,24 +20,38 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             _milkRateService = milkRateService;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var rates = await _milkRateService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = rates.Select(r => new MilkRateListItemViewModel
-            {
-                RateID = r.RateID,
-                FatPercentFrom = r.FatPercentFrom,
-                FatPercentTo = r.FatPercentTo,
-                SnfPercentFrom = r.SnfPercentFrom,
-                SnfPercentTo = r.SnfPercentTo,
-                ClrFrom = r.ClrFrom,
-                ClrTo = r.ClrTo,
-                RatePerLitre = r.RatePerLitre,
-                EffectiveFrom = r.EffectiveFrom,
-                IsActive = r.IsActive
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                rates.Select(r => new MilkRateListItemViewModel
+                {
+                    RateID = r.RateID,
+                    FatPercentFrom = r.FatPercentFrom,
+                    FatPercentTo = r.FatPercentTo,
+                    SnfPercentFrom = r.SnfPercentFrom,
+                    SnfPercentTo = r.SnfPercentTo,
+                    ClrFrom = r.ClrFrom,
+                    ClrTo = r.ClrTo,
+                    RatePerLitre = r.RatePerLitre,
+                    EffectiveFrom = r.EffectiveFrom,
+                    IsActive = r.IsActive
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<MilkRateListItemViewModel, object?>>
+                {
+                    ["fat"] = r => r.FatPercentFrom,
+                    ["snf"] = r => r.SnfPercentFrom,
+                    ["clr"] = r => r.ClrFrom,
+                    ["rate"] = r => r.RatePerLitre,
+                    ["effective"] = r => r.EffectiveFrom,
+                    ["status"] = r => r.IsActive
+                },
+                defaultSort: "effective",
+                defaultDesc: true,
+                activeFirst: r => r.IsActive);
 
             return View(viewModel);
         }

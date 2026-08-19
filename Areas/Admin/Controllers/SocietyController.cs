@@ -31,18 +31,29 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societies = await _societyService.GetAllAsync(ct);
 
-            var viewModel = societies.Select(s => new SocietyListItemViewModel
-            {
-                SocietyID = s.SocietyID,
-                SocietyName = s.SocietyName,
-                RegistrationNo = s.RegistrationNo,
-                ContactPhone = s.ContactPhone,
-                IsActive = s.IsActive
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                societies.Select(s => new SocietyListItemViewModel
+                {
+                    SocietyID = s.SocietyID,
+                    SocietyName = s.SocietyName,
+                    RegistrationNo = s.RegistrationNo,
+                    ContactPhone = s.ContactPhone,
+                    IsActive = s.IsActive
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<SocietyListItemViewModel, object?>>
+                {
+                    ["name"] = s => s.SocietyName,
+                    ["code"] = s => s.RegistrationNo,
+                    ["phone"] = s => s.ContactPhone,
+                    ["status"] = s => s.IsActive
+                },
+                defaultSort: "name",
+                activeFirst: s => s.IsActive);
 
             return View(viewModel);
         }

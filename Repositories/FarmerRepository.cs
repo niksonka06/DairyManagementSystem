@@ -32,7 +32,8 @@ namespace DairyManagementSystem.Repositories
         {
             return await DbSet.AsNoTracking()
                 .Where(f => f.SocietyID == societyId)
-                .OrderBy(f => f.FullName)
+                .OrderByDescending(f => f.IsActive)
+                .ThenBy(f => f.FullName)
                 .ToListAsync(ct);
         }
 
