@@ -6,6 +6,7 @@ using DairyManagementSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Admin.Controllers
 {
@@ -54,9 +55,20 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         }
 
         [HttpGet]
-        public IActionResult Unlock(int id)
+        public async Task<IActionResult> Unlock(int id, CancellationToken ct)
         {
-            return View(new SettlementUnlockViewModel { PaymentID = id });
+            var payment = (await _paymentService.GetGeneratedAcrossAllSocietiesAsync(ct))
+                .FirstOrDefault(p => p.PaymentID == id);
+            if (payment is null)
+            {
+                return NotFound();
+            }
+
+            return View(new SettlementUnlockViewModel
+            {
+                PaymentID = id,
+                RowVersion = payment.RowVersion
+            });
         }
 
         [HttpPost]
@@ -70,13 +82,18 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
 
             try
             {
-                await _paymentService.CancelGeneratedAsync(model.PaymentID, CurrentUserId(), model.Reason, ct);
+                await _paymentService.CancelGeneratedAsync(model.PaymentID, CurrentUserId(), model.Reason, model.RowVersion ?? Array.Empty<byte>(), ct);
                 TempData["Success"] = "Settlement unlocked. Its collections and feed issues are editable again.";
                 return RedirectToAction(nameof(Index));
             }
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
+                return View(model);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                ModelState.AddModelError(string.Empty, "This settlement was modified by someone else. Reload and try again.");
                 return View(model);
             }
         }

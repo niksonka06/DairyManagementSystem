@@ -5,9 +5,9 @@ using MimeKit;
 
 namespace DairyManagementSystem.Services
 {
-    // Mirrors SmsService: when EmailSettings:Enabled is false, the message is
-    // logged and not sent. That lets Forgot Password be tested locally without
-    // a Brevo account — the reset URL appears in the application log.
+    // Generic SMTP via MailKit (Gmail, Outlook, or any relay). When
+    // EmailSettings:Enabled is false, the message is logged and not sent so
+    // Forgot Password can be tested locally — the reset URL is in the log.
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _configuration;
@@ -69,7 +69,7 @@ namespace DairyManagementSystem.Services
                 await client.SendAsync(message, ct);
                 await client.DisconnectAsync(true, ct);
 
-                _logger.LogWarning("Email SENT via Brevo SMTP to {To}. Subject: {Subject}", toEmail, subject);
+                _logger.LogInformation("Email SENT via SMTP ({Host}:{Port}) to {To}. Subject: {Subject}", host, port, toEmail, subject);
                 return true;
             }
             catch (Exception ex)

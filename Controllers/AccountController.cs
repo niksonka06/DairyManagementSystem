@@ -38,12 +38,14 @@ namespace DairyManagementSystem.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Login(string? returnUrl = null)
         {
             return View(new LoginViewModel { ReturnUrl = returnUrl });
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> Login(LoginViewModel model)
@@ -92,12 +94,14 @@ namespace DairyManagementSystem.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ForgotPassword()
         {
             return View(new ForgotPasswordViewModel());
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
@@ -143,12 +147,14 @@ namespace DairyManagementSystem.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ForgotPasswordConfirmation()
         {
             return View();
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ResetPassword(string? email, string? code)
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(code))
@@ -160,6 +166,7 @@ namespace DairyManagementSystem.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
@@ -220,14 +227,15 @@ namespace DairyManagementSystem.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult ResetPasswordConfirmation()
         {
             return View();
         }
 
         [HttpPost]
+        [AllowAnonymous]
         [ValidateAntiForgeryToken]
-        [Authorize]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
@@ -278,6 +286,7 @@ namespace DairyManagementSystem.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();

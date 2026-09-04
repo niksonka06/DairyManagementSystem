@@ -6,6 +6,7 @@ using DairyManagementSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
@@ -168,29 +169,33 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Recalculate(int id, CancellationToken ct)
+        public async Task<IActionResult> Recalculate(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.RecalculateAsync(id, societyId, ct);
+                await _paymentService.RecalculateAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 TempData["Success"] = "Amounts recalculated from current unlocked records.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Generate(int id, CancellationToken ct)
+        public async Task<IActionResult> Generate(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.GenerateAsync(id, societyId, CurrentUserId(), ct);
+                await _paymentService.GenerateAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 var generated = await _paymentService.GetByIdWithinSocietyAsync(id, societyId, ct);
                 TempData["Success"] = generated is not null && generated.NetAmount < 0
                     ? "Settlement generated with a negative net. This farmer will not be paid this week — the balance will deduct from next week."
@@ -200,42 +205,56 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarkPaid(int id, CancellationToken ct)
+        public async Task<IActionResult> MarkPaid(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.MarkPaidAsync(id, societyId, CurrentUserId(), ct);
+                await _paymentService.MarkPaidAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 TempData["Success"] = "Settlement marked as Paid.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CancelDraft(int id, CancellationToken ct)
+        public async Task<IActionResult> CancelDraft(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.CancelDraftAsync(id, societyId, CurrentUserId(), ct);
+                await _paymentService.CancelDraftAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 TempData["Success"] = "Draft settlement cancelled.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Index));
         }
+
+        private const string ConcurrentEditMessage = "This settlement was modified by someone else. Reload and try again.";
 
         private async Task<List<FarmerListItemViewModel>> AvailableFarmersAsync(CancellationToken ct)
         {

@@ -56,18 +56,22 @@
     @if (Model.Status == SettlementStatus.Draft)
     {
         <form asp-action="Recalculate" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <input type="hidden" asp-for="RowVersion" />
             <button type="submit" class="btn btn-outline-secondary">Recalculate</button>
         </form>
         <form asp-action="Generate" asp-route-id="@Model.PaymentID" method="post" class="d-inline" onsubmit="return confirm('Generating will LOCK all collections and feed issues in this period. Continue?');">
+            <input type="hidden" asp-for="RowVersion" />
             <button type="submit" class="btn btn-primary">Generate</button>
         </form>
         <form asp-action="CancelDraft" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <input type="hidden" asp-for="RowVersion" />
             <button type="submit" class="btn btn-outline-danger">Cancel Draft</button>
         </form>
     }
     else if (Model.Status == SettlementStatus.Generated)
     {
         <form asp-action="MarkPaid" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <input type="hidden" asp-for="RowVersion" />
             <button type="submit" class="btn btn-success">@(Model.NetAmount < 0 ? "Close period (carry to next week)" : "Mark as Paid")</button>
         </form>
         <p class="text-muted mt-2">To correct a generated settlement, an Admin must unlock it (Admin area → Unlock Settlements), which requires a reason and is fully audited.</p>

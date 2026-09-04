@@ -67,6 +67,7 @@ namespace DairyManagementSystem.Data.Seed
 
             var db = services.GetRequiredService<ApplicationDbContext>();
             await SeedMilkRateChartAsync(db);
+            await DemoOperationsSeeder.SeedAsync(services);
         }
 
         // Fixed past date so collection tests on any recent day still match.

@@ -154,7 +154,7 @@ Manual rate lookups, arithmetic, register consolidation, and handwritten settlem
 | Area | Requirement |
 |------|-------------|
 | Performance | Page load within 3 seconds under normal usage |
-| Security | HTTPS, password hashing, RBAC, input validation, parameterised EF queries |
+| Security | HTTPS, BCrypt password hashing, RBAC, input validation, parameterised EF queries |
 | Data integrity | FK constraints, validation checks, duplicate collection prevention |
 | Audit trail | Log all create/update/delete with user and timestamp |
 | Usability | Simple Bootstrap UI for operators |

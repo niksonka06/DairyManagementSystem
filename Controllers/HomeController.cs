@@ -6,6 +6,7 @@ namespace DairyManagementSystem.Controllers
 {
     public class HomeController : Controller
     {
+        [AllowAnonymous]
         public IActionResult Index()
         {
             if (User.Identity?.IsAuthenticated == true)
@@ -21,6 +22,7 @@ namespace DairyManagementSystem.Controllers
             return View();
         }
 
+        [AllowAnonymous]
         public IActionResult Error()
         {
             return View();

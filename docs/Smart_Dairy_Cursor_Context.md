@@ -420,7 +420,7 @@ The Net Payable amount should be visually prominent.
 ## 21. Security & Data Integrity
 
 Required concepts: - ASP.NET Core Identity - Role-based authorization -
-HTTPS - Secure password hashing - Input validation - Parameterized EF
+HTTPS - BCrypt password hashing - Input validation - Parameterized EF
 Core queries - Foreign keys - Validation/check constraints - Duplicate
 collection prevention - Audit logging - Database transactions for
 settlement/payment operations - Optimistic concurrency/RowVersion where

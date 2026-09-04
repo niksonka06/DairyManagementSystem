@@ -25,12 +25,12 @@
 
     --sidebar: oklch(0.24 0.05 155);
     --sidebar-foreground: oklch(0.93 0.02 110);
-    --sidebar-primary: oklch(0.83 0.135 80);
+    --sidebar-primary: oklch(0.93 0.02 110);
     --sidebar-primary-foreground: oklch(0.22 0.04 80);
     --sidebar-accent: oklch(0.32 0.06 155);
     --sidebar-accent-foreground: oklch(0.97 0.012 100);
     --sidebar-border: oklch(1 0 0 / 12%);
-    --sidebar-ring: oklch(0.83 0.135 80);
+    --sidebar-ring: oklch(0.93 0.02 110);
 
     --radius: 0.75rem;
     --radius-sm: calc(0.75rem - 4px);
@@ -142,6 +142,14 @@ a {
     display: block;
 }
 
+.brand-logo-lockup {
+    display: block;
+    width: min(100%, 280px);
+    height: auto;
+    margin: 0 auto 1.25rem;
+    object-fit: contain;
+}
+
 /* ------------------------------------------------------------------ */
 /* App shell (authenticated)                                          */
 /* ------------------------------------------------------------------ */
@@ -193,10 +201,12 @@ a {
 
 .sidebar-brand-sub,
 .auth-brand-sub {
-    font-size: 0.74rem;
+    font-size: 0.7rem;
     font-weight: 500;
     color: var(--sidebar-primary);
     opacity: 1;
+    line-height: 1.25;
+    max-width: 11.5rem;
 }
 
 .sidebar-section-label {
@@ -245,7 +255,7 @@ a {
     font-size: 1rem;
     width: 1.15rem;
     text-align: center;
-    color: var(--accent);
+    color: inherit;
 }
 
 .sidebar-user {
@@ -581,8 +591,58 @@ a {
 }
 
 .landing-card-wide {
-    max-width: 860px;
+    max-width: 640px;
     text-align: center;
+}
+
+.landing-lead {
+    color: var(--muted-foreground);
+    margin: 0 0 1.5rem;
+    line-height: 1.65;
+}
+
+.landing-features {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.75rem;
+    text-align: center;
+}
+
+.landing-feature {
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1rem 0.6rem;
+}
+
+.landing-feature i {
+    color: var(--primary);
+    font-size: 1.25rem;
+    display: block;
+    margin-bottom: 0.45rem;
+}
+
+.landing-feature strong {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--foreground);
+    line-height: 1.2;
+}
+
+.landing-feature span {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--muted-foreground);
+    margin-top: 0.15rem;
+}
+
+@media (max-width: 575.98px) {
+    .landing-features {
+        grid-template-columns: 1fr;
+    }
 }
 
 .auth-card h2 {
