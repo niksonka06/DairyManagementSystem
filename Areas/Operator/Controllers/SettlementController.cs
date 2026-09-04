@@ -6,45 +6,54 @@ using DairyManagementSystem.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class SettlementController : Controller
+    public class SettlementController : OperatorControllerBase
     {
         private readonly IPaymentService _paymentService;
         private readonly IFarmerService _farmerService;
         private readonly IAdvancePaymentService _advancePaymentService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public SettlementController(
             IPaymentService paymentService,
             IFarmerService farmerService,
             IAdvancePaymentService advancePaymentService,
             UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _paymentService = paymentService;
             _farmerService = farmerService;
             _advancePaymentService = advancePaymentService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var payments = await _paymentService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = payments.Select(p => new SettlementListItemViewModel
-            {
-                PaymentID = p.PaymentID,
-                FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = p.Farmer?.FullName ?? string.Empty,
-                PeriodStart = p.PeriodStart,
-                PeriodEnd = p.PeriodEnd,
-                NetAmount = p.NetAmount,
-                Status = p.Status
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                payments.Select(p => new SettlementListItemViewModel
+                {
+                    PaymentID = p.PaymentID,
+                    FarmerCode = p.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = p.Farmer?.FullName ?? string.Empty,
+                    PeriodStart = p.PeriodStart,
+                    PeriodEnd = p.PeriodEnd,
+                    NetAmount = p.NetAmount,
+                    Status = p.Status
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<SettlementListItemViewModel, object?>>
+                {
+                    ["period"] = p => p.PeriodStart,
+                    ["farmer"] = p => p.FarmerCode + " " + p.FarmerName,
+                    ["amount"] = p => p.NetAmount,
+                    ["status"] = p => p.Status.ToString()
+                },
+                defaultSort: "period",
+                defaultDesc: true);
 
             return View(viewModel);
         }
@@ -119,73 +128,133 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> CarryForward(int farmerId, DateTime weekDate, CancellationToken ct)
+        {
+            var farmers = await AvailableFarmersAsync(ct);
+            if (!farmers.Any(f => f.FarmerID == farmerId))
+            {
+                return NotFound();
+            }
+
+            var carry = await _paymentService.GetCarryForwardAsync(farmerId, weekDate, ct);
+            if (carry is null)
+            {
+                return Json(new { amount = (decimal?)null });
+            }
+
+            return Json(new
+            {
+                amount = carry.Value.Amount,
+                periodStart = carry.Value.PeriodStart.ToString("dd-MMM-yyyy"),
+                periodEnd = carry.Value.PeriodEnd.ToString("dd-MMM-yyyy")
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Download(int id, CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var payment = await _paymentService.GetByIdWithinSocietyAsync(id, societyId, ct);
+            if (payment is null)
+            {
+                return NotFound();
+            }
+
+            var farmerCode = payment.Farmer?.FarmerCode ?? string.Empty;
+            var farmerName = payment.Farmer?.FullName ?? string.Empty;
+            var pdf = SettlementPdf.Generate(payment, farmerCode, farmerName);
+            return File(pdf, "application/pdf", $"Settlement_{farmerCode}_{payment.PeriodStart:yyyyMMdd}.pdf");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Recalculate(int id, CancellationToken ct)
+        public async Task<IActionResult> Recalculate(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.RecalculateAsync(id, societyId, ct);
+                await _paymentService.RecalculateAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 TempData["Success"] = "Amounts recalculated from current unlocked records.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Generate(int id, CancellationToken ct)
+        public async Task<IActionResult> Generate(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.GenerateAsync(id, societyId, CurrentUserId(), ct);
-                TempData["Success"] = "Settlement generated. Collections and feed issues for this period are now locked.";
+                await _paymentService.GenerateAsync(id, societyId, CurrentUserId(), rowVersion, ct);
+                var generated = await _paymentService.GetByIdWithinSocietyAsync(id, societyId, ct);
+                TempData["Success"] = generated is not null && generated.NetAmount < 0
+                    ? "Settlement generated with a negative net. This farmer will not be paid this week — the balance will deduct from next week."
+                    : "Settlement generated. Collections and feed issues for this period are now locked.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MarkPaid(int id, CancellationToken ct)
+        public async Task<IActionResult> MarkPaid(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.MarkPaidAsync(id, societyId, CurrentUserId(), ct);
+                await _paymentService.MarkPaidAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 TempData["Success"] = "Settlement marked as Paid.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Details), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CancelDraft(int id, CancellationToken ct)
+        public async Task<IActionResult> CancelDraft(int id, byte[] rowVersion, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             try
             {
-                await _paymentService.CancelDraftAsync(id, societyId, CurrentUserId(), ct);
+                await _paymentService.CancelDraftAsync(id, societyId, CurrentUserId(), rowVersion, ct);
                 TempData["Success"] = "Draft settlement cancelled.";
             }
             catch (BusinessRuleException ex)
             {
                 TempData["Error"] = ex.Message;
             }
+            catch (DbUpdateConcurrencyException)
+            {
+                TempData["Error"] = ConcurrentEditMessage;
+            }
             return RedirectToAction(nameof(Index));
         }
+
+        private const string ConcurrentEditMessage = "This settlement was modified by someone else. Reload and try again.";
 
         private async Task<List<FarmerListItemViewModel>> AvailableFarmersAsync(CancellationToken ct)
         {
@@ -197,22 +266,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerCode = f.FarmerCode,
                 FullName = f.FullName
             }).ToList();
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

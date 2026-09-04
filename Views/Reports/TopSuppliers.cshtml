@@ -25,11 +25,15 @@
 <div class="row">
     <div class="col-md-6 mb-4">
         <h5>Top 10 by Quantity</h5>
-        <canvas id="qtyChart" height="220"></canvas>
+        <div class="chart-frame">
+            <canvas id="qtyChart"></canvas>
+        </div>
     </div>
     <div class="col-md-6 mb-4">
         <h5>Top 10 by Income</h5>
-        <canvas id="incomeChart" height="220"></canvas>
+        <div class="chart-frame">
+            <canvas id="incomeChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -44,7 +48,7 @@
         new Chart(document.getElementById('qtyChart'), {
             type: 'bar',
             data: { labels: qtyLabels, datasets: [{ label: 'Litres', data: qtyValues, backgroundColor: '#0d6efd' }] },
-            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
         const incLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TopByIncome.Select(s => s.FarmerCode)));
@@ -53,7 +57,7 @@
         new Chart(document.getElementById('incomeChart'), {
             type: 'bar',
             data: { labels: incLabels, datasets: [{ label: 'Rupees', data: incValues, backgroundColor: '#198754' }] },
-            options: { indexAxis: 'y', plugins: { legend: { display: false } } }
+            options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
     </script>
 }

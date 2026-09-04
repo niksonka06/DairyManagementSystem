@@ -20,11 +20,20 @@ namespace DairyManagementSystem.Repositories
                      && f.FarmerID != (excludingFarmerId ?? 0), ct);
         }
 
+        public async Task<List<string>> GetCodesBySocietyAsync(int societyId, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Where(f => f.SocietyID == societyId)
+                .Select(f => f.FarmerCode)
+                .ToListAsync(ct);
+        }
+
         public async Task<List<Farmer>> GetBySocietyAsync(int societyId, CancellationToken ct = default)
         {
             return await DbSet.AsNoTracking()
                 .Where(f => f.SocietyID == societyId)
-                .OrderBy(f => f.FullName)
+                .OrderByDescending(f => f.IsActive)
+                .ThenBy(f => f.FullName)
                 .ToListAsync(ct);
         }
 
@@ -33,6 +42,11 @@ namespace DairyManagementSystem.Repositories
             return await DbSet
                 .Include(f => f.User)
                 .FirstOrDefaultAsync(f => f.FarmerID == farmerId && f.SocietyID == societyId, ct);
+        }
+
+        public async Task<Farmer?> GetByUserIdAsync(int userId, CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking().FirstOrDefaultAsync(f => f.UserID == userId, ct);
         }
     }
 }

@@ -10,83 +10,58 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class MilkCollectionController : Controller
+    public class MilkCollectionController : OperatorControllerBase
     {
         private readonly IMilkCollectionService _collectionService;
         private readonly IFarmerService _farmerService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public MilkCollectionController(IMilkCollectionService collectionService, IFarmerService farmerService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _collectionService = collectionService;
             _farmerService = farmerService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
+        public async Task<IActionResult> Index(DateTime? date, Shift? shift, string? sort, string? dir, int page, CancellationToken ct)
         {
-            var societyId = await CurrentOperatorSocietyIdAsync();
             var day = (date ?? DateTime.Today).Date;
-
-            var collections = await _collectionService.GetBySocietyAndDateAsync(societyId, day, ct);
-
-            var viewModel = collections.Select(c => new MilkCollectionListItemViewModel
+            var form = new MilkCollectionFormViewModel
             {
-                CollectionID = c.CollectionID,
-                FarmerCode = c.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = c.Farmer?.FullName ?? string.Empty,
-                CollectionDate = c.CollectionDate,
-                Shift = c.Shift,
-                Quantity = c.Quantity,
-                FatPercent = c.FatPercent,
-                SNF = c.SNF,
-                RatePerLitre = c.RatePerLitre,
-                Amount = c.Amount,
-                IsLocked = c.IsLocked
-            }).ToList();
+                CollectionDate = day,
+                Shift = shift ?? Shift.Morning
+            };
 
-            ViewBag.SelectedDate = day;
-            ViewBag.DayTotalQuantity = viewModel.Sum(v => v.Quantity);
-            ViewBag.DayTotalAmount = viewModel.Sum(v => v.Amount);
-
-            return View(viewModel);
+            return View(await BuildPageAsync(day, form, sort, dir, page, ct));
         }
 
         [HttpGet]
-        public async Task<IActionResult> Create(CancellationToken ct)
+        public IActionResult Create(DateTime? date)
         {
-            var model = new MilkCollectionFormViewModel
-            {
-                AvailableFarmers = await AvailableFarmersAsync(ct)
-            };
-            return View(model);
+            return RedirectToAction(nameof(Index), new { date });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(MilkCollectionFormViewModel model, CancellationToken ct)
+        public async Task<IActionResult> Create([Bind(Prefix = "Form")] MilkCollectionFormViewModel model, CancellationToken ct)
         {
             model.SocietyID = await CurrentOperatorSocietyIdAsync();
+            var day = model.CollectionDate.Date;
 
             if (!ModelState.IsValid)
             {
-                model.AvailableFarmers = await AvailableFarmersAsync(ct);
-                return View(model);
+                return View(nameof(Index), await BuildPageAsync(day, model, null, null, 1, ct));
             }
 
             try
             {
                 var collection = await _collectionService.CreateAsync(model, CurrentUserId(), ct);
                 TempData["Success"] = $"Collection recorded — Amount: ₹{collection.Amount:0.00}";
-                return RedirectToAction(nameof(Index), new { date = collection.CollectionDate });
+                return RedirectToAction(nameof(Index), new { date = collection.CollectionDate, shift = collection.Shift });
             }
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
-                model.AvailableFarmers = await AvailableFarmersAsync(ct);
-                return View(model);
+                return View(nameof(Index), await BuildPageAsync(day, model, null, null, 1, ct));
             }
         }
 
@@ -154,6 +129,68 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
         }
 
+        private async Task<MilkCollectionPageViewModel> BuildPageAsync(
+            DateTime day,
+            MilkCollectionFormViewModel form,
+            string? sort,
+            string? dir,
+            int page,
+            CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var collections = await _collectionService.GetBySocietyAndDateAsync(societyId, day, ct);
+
+            var items = collections.Select(c => new MilkCollectionListItemViewModel
+            {
+                CollectionID = c.CollectionID,
+                FarmerCode = c.Farmer?.FarmerCode ?? string.Empty,
+                FarmerName = c.Farmer?.FullName ?? string.Empty,
+                CollectionDate = c.CollectionDate,
+                Shift = c.Shift,
+                Quantity = c.Quantity,
+                FatPercent = c.FatPercent,
+                SNF = c.SNF,
+                CLR = c.CLR,
+                RatePerLitre = c.RatePerLitre,
+                Amount = c.Amount,
+                IsLocked = c.IsLocked
+            }).ToList();
+
+            form.CollectionDate = form.CollectionDate == default ? day : form.CollectionDate.Date;
+            form.AvailableFarmers = await AvailableFarmersAsync(ct);
+
+            var dateValue = day.ToString("yyyy-MM-dd");
+            var extra = new Dictionary<string, string?> { ["date"] = dateValue };
+            if (form.Shift != default)
+            {
+                extra["shift"] = form.Shift.ToString();
+            }
+
+            return new MilkCollectionPageViewModel
+            {
+                SelectedDate = day,
+                Form = form,
+                Collections = ListPaging.Apply(
+                    items, sort, dir, page,
+                    new Dictionary<string, Func<MilkCollectionListItemViewModel, object?>>
+                    {
+                        ["shift"] = c => c.Shift.ToString(),
+                        ["farmer"] = c => c.FarmerCode + " " + c.FarmerName,
+                        ["qty"] = c => c.Quantity,
+                        ["fat"] = c => c.FatPercent,
+                        ["snf"] = c => c.SNF,
+                        ["clr"] = c => c.CLR,
+                        ["rate"] = c => c.RatePerLitre,
+                        ["amount"] = c => c.Amount,
+                        ["status"] = c => c.IsLocked
+                    },
+                    defaultSort: "farmer",
+                    extraRoute: extra),
+                DayTotalQuantity = items.Sum(v => v.Quantity),
+                DayTotalAmount = items.Sum(v => v.Amount)
+            };
+        }
+
         private async Task<List<FarmerListItemViewModel>> AvailableFarmersAsync(CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
@@ -164,22 +201,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerCode = f.FarmerCode,
                 FullName = f.FullName
             }).ToList();
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

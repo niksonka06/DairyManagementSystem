@@ -15,28 +15,48 @@ namespace DairyManagementSystem.Repositories
         {
             return await DbSet.AsNoTracking()
                 .Where(r => r.SocietyID == societyId)
-                .OrderByDescending(r => r.EffectiveFrom)
-                .ThenByDescending(r => r.FatPercent)
+                .OrderByDescending(r => r.IsActive)
+                .ThenByDescending(r => r.EffectiveFrom)
+                .ThenBy(r => r.FatPercentFrom)
+                .ThenBy(r => r.SnfPercentFrom)
+                .ThenBy(r => r.ClrFrom)
                 .ToListAsync(ct);
         }
 
-        public async Task<bool> RateExistsAsync(int societyId, decimal fatPercent, DateTime effectiveFrom, int? excludingRateId, CancellationToken ct = default)
+        public async Task<bool> RangeOverlapsAsync(
+            int societyId,
+            decimal fatPercentFrom,
+            decimal fatPercentTo,
+            decimal snfPercentFrom,
+            decimal snfPercentTo,
+            decimal clrFrom,
+            decimal clrTo,
+            DateTime effectiveFrom,
+            int? excludingRateId,
+            CancellationToken ct = default)
         {
             return await DbSet.AnyAsync(r =>
                 r.SocietyID == societyId &&
-                r.FatPercent == fatPercent &&
                 r.EffectiveFrom == effectiveFrom.Date &&
-                r.RateID != (excludingRateId ?? 0), ct);
+                r.RateID != (excludingRateId ?? 0) &&
+                r.FatPercentFrom <= fatPercentTo &&
+                fatPercentFrom <= r.FatPercentTo &&
+                r.SnfPercentFrom <= snfPercentTo &&
+                snfPercentFrom <= r.SnfPercentTo &&
+                r.ClrFrom <= clrTo &&
+                clrFrom <= r.ClrTo, ct);
         }
 
-        public async Task<MilkRate?> GetApplicableRateAsync(int societyId, decimal fatPercent, DateTime collectionDate, CancellationToken ct = default)
+        public async Task<MilkRate?> GetApplicableRateAsync(
+            int societyId,
+            decimal fatPercent,
+            decimal snf,
+            decimal clr,
+            DateTime collectionDate,
+            CancellationToken ct = default)
         {
             var date = collectionDate.Date;
 
-            // STEP 1: which rate-chart "version" (identified by EffectiveFrom)
-            // was active on this date? Only IsActive rows count — a manually
-            // deactivated row (e.g. entered by mistake) is never considered,
-            // even historically.
             var latestEffectiveFrom = await DbSet
                 .Where(r => r.SocietyID == societyId && r.IsActive && r.EffectiveFrom <= date)
                 .Select(r => (DateTime?)r.EffectiveFrom)
@@ -44,21 +64,22 @@ namespace DairyManagementSystem.Repositories
 
             if (latestEffectiveFrom is null)
             {
-                return null; // no rate chart existed yet for this society on this date
+                return null;
             }
 
-            // STEP 2: within that specific chart version, nearest-lower-bracket
-            // match — the highest FatPercent row that's still <= the actual
-            // fat%. If the actual fat is below every bracket in this chart,
-            // this returns null and the caller must treat that as "no
-            // applicable rate", not silently fall back to some other chart
-            // version (that would violate "historical rate must remain correct").
             return await DbSet
                 .Where(r => r.SocietyID == societyId
                             && r.IsActive
                             && r.EffectiveFrom == latestEffectiveFrom.Value
-                            && r.FatPercent <= fatPercent)
-                .OrderByDescending(r => r.FatPercent)
+                            && r.FatPercentFrom <= fatPercent
+                            && fatPercent <= r.FatPercentTo
+                            && r.SnfPercentFrom <= snf
+                            && snf <= r.SnfPercentTo
+                            && r.ClrFrom <= clr
+                            && clr <= r.ClrTo)
+                .OrderByDescending(r => r.FatPercentFrom)
+                .ThenByDescending(r => r.SnfPercentFrom)
+                .ThenByDescending(r => r.ClrFrom)
                 .FirstOrDefaultAsync(ct);
         }
     }

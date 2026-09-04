@@ -30,5 +30,9 @@ namespace DairyManagementSystem.Interfaces
         // Fat Analysis, Top Suppliers) — broader than the farmer-scoped
         // queries above, which exist for Settlement generation specifically.
         Task<List<MilkCollection>> GetBySocietyAndDateRangeAsync(int societyId, DateTime from, DateTime to, CancellationToken ct = default);
+
+        // Farmer Portal — a farmer's OWN collections only, never another
+        // farmer's, enforced by filtering on FarmerID at the query itself.
+        Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default);
     }
 }

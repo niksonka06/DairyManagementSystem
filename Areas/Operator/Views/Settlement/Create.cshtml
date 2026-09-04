@@ -29,8 +29,9 @@
 
     <div class="mb-3">
         <label asp-for="PreviousDue" class="form-label"></label>
-        <input asp-for="PreviousDue" class="form-control" type="number" step="0.01" min="0" />
+        <input asp-for="PreviousDue" class="form-control" type="number" step="0.01" id="previousDue" />
         <span asp-validation-for="PreviousDue" class="text-danger"></span>
+        <div class="form-text" id="carryForwardHint">Leave blank to auto-apply last week's negative balance (if any) as a deduction. Enter 0 to skip.</div>
     </div>
 
     <hr />
@@ -63,4 +64,31 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        const farmerSelect = document.getElementById('FarmerID');
+        const weekInput = document.querySelector('[name="WeekReferenceDate"]');
+        const dueInput = document.getElementById('previousDue');
+        const hint = document.getElementById('carryForwardHint');
+        const url = '@Url.Action("CarryForward", "Settlement")';
+
+        async function refreshCarryForward() {
+            if (!farmerSelect.value || !weekInput.value) {
+                return;
+            }
+            const response = await fetch(`${url}?farmerId=${farmerSelect.value}&weekDate=${weekInput.value}`);
+            if (!response.ok) {
+                return;
+            }
+            const data = await response.json();
+            if (data.amount != null) {
+                dueInput.value = data.amount;
+                hint.textContent = `Last week (${data.periodStart} – ${data.periodEnd}) was negative. This amount will deduct from this settlement.`;
+            } else if (!dueInput.value) {
+                hint.textContent = 'Leave blank to auto-apply last week\'s negative balance (if any). Enter 0 to skip.';
+            }
+        }
+
+        farmerSelect.addEventListener('change', refreshCarryForward);
+        weekInput.addEventListener('change', refreshCarryForward);
+    </script>
 }

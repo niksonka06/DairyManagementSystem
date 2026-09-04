@@ -38,11 +38,16 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException("Selected farmer does not belong to this society.");
             }
 
+            if (!farmer.IsActive)
+            {
+                throw new BusinessRuleException("Selected farmer is inactive and cannot receive advance payments.");
+            }
+
             var advance = new AdvancePayment
             {
                 FarmerID = model.FarmerID,
                 SocietyID = model.SocietyID,
-                Amount = model.Amount,
+                Amount = model.Amount!.Value,
                 PaymentDate = model.PaymentDate.Date,
                 RecordedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,

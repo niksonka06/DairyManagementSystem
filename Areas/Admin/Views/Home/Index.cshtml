@@ -1,44 +1,137 @@
+@model AdminDashboardViewModel
 @{
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h2 class="mb-4">Admin Dashboard</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">Union Dashboard</h2>
+        <p class="text-muted mb-0">Consolidated overview for @Model.OverviewDate.ToString("dd-MMM-yyyy")</p>
+    </div>
+    <form method="get" class="d-flex gap-2 align-items-end">
+        <div>
+            <label class="form-label small mb-1">Date</label>
+            <input type="date" name="date" class="form-control" value="@Model.OverviewDate.ToString("yyyy-MM-dd")" />
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Go</button>
+    </form>
+</div>
 
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Milk collected</div>
+                <div class="fs-3 fw-semibold">@Model.TotalMilkTodayLitres.ToString("0.00") L</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Payable</div>
+                <div class="fs-3 fw-semibold">₹@Model.TotalPayableToday.ToString("0.00")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">Active farmers</div>
+                <div class="fs-3 fw-semibold">@Model.ActiveFarmerCount</div>
+                <div class="small text-muted">@Model.ActiveSocietyCount / @Model.TotalSocietyCount societies active</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card kpi-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase">To pay (generated)</div>
+                <div class="fs-3 fw-semibold">₹@Model.PendingSettlementsAmount.ToString("0.00")</div>
+                <div class="small text-muted">@Model.PendingSettlementsCount settlement(s)</div>
+                @if (Model.CarryForwardAmount < 0)
+                {
+                    <div class="small text-muted">Carry-forward ₹@Model.CarryForwardAmount.ToString("0.00")</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<h5 class="mb-3">Society performance</h5>
+<div class="table-responsive mb-4">
+    <table class="table table-striped table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Society</th>
+                <th>Status</th>
+                <th class="text-end">Operators</th>
+                <th class="text-end">Farmers</th>
+                <th class="text-end">Milk</th>
+                <th class="text-end">Payable</th>
+                <th class="text-end">Morning</th>
+                <th class="text-end">Evening</th>
+                <th class="text-end">Settlements due</th>
+                <th class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model.Societies)
+            {
+                <tr>
+                    <td class="fw-semibold">@s.SocietyName</td>
+                    <td>
+                        @if (s.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td class="text-end">@s.OperatorCount</td>
+                    <td class="text-end">@s.ActiveFarmerCount</td>
+                    <td class="text-end">@s.TodayMilkLitres.ToString("0.00") L</td>
+                    <td class="text-end">₹@s.TodayPayable.ToString("0.00")</td>
+                    <td class="text-end">@s.MorningEntries</td>
+                    <td class="text-end">@s.EveningEntries</td>
+                    <td class="text-end">
+                        ₹@s.PendingSettlementsAmount.ToString("0.00")
+                        @if (s.CarryForwardAmount < 0)
+                        {
+                            <div class="small text-muted">CF ₹@s.CarryForwardAmount.ToString("0.00")</div>
+                        }
+                    </td>
+                    <td class="text-end">
+                        <a asp-controller="Society" asp-action="Details" asp-route-id="@s.SocietyID" asp-route-date="@Model.OverviewDate.ToString("yyyy-MM-dd")" class="btn btn-sm btn-outline-primary">View</a>
+                        <a asp-area="" asp-controller="Reports" asp-action="Index" asp-route-societyId="@s.SocietyID" class="btn btn-sm btn-outline-secondary">Reports</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Societies.Any())
+            {
+                <tr><td colspan="10" class="text-center text-muted">No societies yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<h5 class="mb-3">Quick actions</h5>
 <div class="row g-3">
     <div class="col-auto">
-        <div class="card" style="width: 20rem;">
-            <div class="card-body">
-                <h5 class="card-title">Societies</h5>
-                <p class="card-text">Manage dairy societies — add, edit, activate/deactivate.</p>
-                <a asp-controller="Society" asp-action="Index" class="btn btn-primary">Manage Societies</a>
-            </div>
-        </div>
+        <a asp-controller="Society" asp-action="Setup" class="btn btn-primary">Setup Society</a>
     </div>
     <div class="col-auto">
-        <div class="card" style="width: 20rem;">
-            <div class="card-body">
-                <h5 class="card-title">Operators</h5>
-                <p class="card-text">Create Operator accounts and assign them to a society.</p>
-                <a asp-controller="User" asp-action="Index" class="btn btn-primary">Manage Operators</a>
-            </div>
-        </div>
+        <a asp-controller="User" asp-action="Index" class="btn btn-outline-primary">Manage Operators</a>
     </div>
     <div class="col-auto">
-        <div class="card" style="width: 20rem;">
-            <div class="card-body">
-                <h5 class="card-title">Unlock Settlements</h5>
-                <p class="card-text">Cancel & unlock a Generated settlement (requires reason).</p>
-                <a asp-controller="SettlementUnlock" asp-action="Index" class="btn btn-primary">Unlock Settlements</a>
-            </div>
-        </div>
+        <a asp-controller="SettlementUnlock" asp-action="Index" class="btn btn-outline-primary">Unlock Settlements</a>
     </div>
     <div class="col-auto">
-        <div class="card" style="width: 20rem;">
-            <div class="card-body">
-                <h5 class="card-title">Reports</h5>
-                <p class="card-text">Cross-society reports — pick a society to view its data.</p>
-                <a asp-area="" asp-controller="Reports" asp-action="Index" class="btn btn-primary">View Reports</a>
-            </div>
-        </div>
+        <a asp-area="" asp-controller="Reports" asp-action="Index" class="btn btn-outline-primary">Reports</a>
+    </div>
+    <div class="col-auto">
+        <a asp-controller="AuditLog" asp-action="Index" class="btn btn-outline-primary">Audit Log</a>
     </div>
 </div>

@@ -10,7 +10,7 @@ namespace DairyManagementSystem.Models.ViewModels
         [Required]
         [Range(0.01, 100000, ErrorMessage = "Quantity to add must be greater than 0.")]
         [Display(Name = "Quantity to Add")]
-        public decimal QuantityToAdd { get; set; }
+        public decimal? QuantityToAdd { get; set; }
 
         public int SocietyID { get; set; }
     }

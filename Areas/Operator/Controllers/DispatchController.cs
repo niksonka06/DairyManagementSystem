@@ -10,45 +10,70 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class DispatchController : Controller
+    public class DispatchController : OperatorControllerBase
     {
         private readonly IDispatchService _dispatchService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public DispatchController(IDispatchService dispatchService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _dispatchService = dispatchService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var dispatches = await _dispatchService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = dispatches.Select(d => new DispatchListItemViewModel
-            {
-                DispatchID = d.DispatchID,
-                DispatchDate = d.DispatchDate,
-                DispatchTime = d.DispatchTime,
-                VehicleNo = d.VehicleNo,
-                Destination = d.Destination,
-                TotalCollected = d.TotalCollected,
-                TotalDispatched = d.TotalDispatched,
-                Variance = d.Variance,
-                VariancePercent = d.VariancePercent,
-                VarianceReason = d.VarianceReason
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                dispatches.Select(d => new DispatchListItemViewModel
+                {
+                    DispatchID = d.DispatchID,
+                    DispatchDate = d.DispatchDate,
+                    DispatchTime = d.DispatchTime,
+                    VehicleNo = d.VehicleNo,
+                    Destination = d.Destination,
+                    TotalCollected = d.TotalCollected,
+                    TotalDispatched = d.TotalDispatched,
+                    Variance = d.Variance,
+                    VariancePercent = d.VariancePercent,
+                    VarianceReason = d.VarianceReason
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<DispatchListItemViewModel, object?>>
+                {
+                    ["date"] = d => d.DispatchDate,
+                    ["vehicle"] = d => d.VehicleNo,
+                    ["dest"] = d => d.Destination,
+                    ["collected"] = d => d.TotalCollected,
+                    ["dispatched"] = d => d.TotalDispatched,
+                    ["variance"] = d => d.Variance
+                },
+                defaultSort: "date",
+                defaultDesc: true);
 
             return View(viewModel);
         }
 
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create(CancellationToken ct)
         {
-            return View(new DispatchFormViewModel());
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var collected = await _dispatchService.GetCollectedLitresAsync(societyId, DateTime.Today, ct);
+
+            return View(new DispatchFormViewModel
+            {
+                TotalCollected = collected,
+                TotalDispatched = collected
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CollectedLitres(DateTime date, CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var litres = await _dispatchService.GetCollectedLitresAsync(societyId, date, ct);
+            return Json(new { litres });
         }
 
         [HttpPost]
@@ -59,6 +84,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             if (!ModelState.IsValid)
             {
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
 
@@ -71,6 +97,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
         }
@@ -93,12 +120,11 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 VehicleNo = dispatch.VehicleNo,
                 Destination = dispatch.Destination,
                 TotalDispatched = dispatch.TotalDispatched,
+                TotalCollected = await _dispatchService.GetCollectedLitresAsync(societyId, dispatch.DispatchDate, ct),
                 VarianceReason = dispatch.VarianceReason,
                 SocietyID = dispatch.SocietyID,
                 RowVersion = dispatch.RowVersion
             };
-
-            ViewBag.CurrentTotalCollected = dispatch.TotalCollected;
 
             return View(model);
         }
@@ -111,6 +137,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             if (!ModelState.IsValid)
             {
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
 
@@ -123,30 +150,16 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
             catch (DbUpdateConcurrencyException)
             {
                 ModelState.AddModelError(string.Empty,
                     "This dispatch record was modified by someone else while you were editing it. Please reload and try again.");
+                model.TotalCollected = await _dispatchService.GetCollectedLitresAsync(model.SocietyID, model.DispatchDate, ct);
                 return View(model);
             }
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

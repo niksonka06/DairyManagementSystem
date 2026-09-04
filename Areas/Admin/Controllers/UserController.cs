@@ -24,22 +24,35 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var operators = await _userManagementService.GetOperatorsAsync(ct);
             var societies = await _societyService.GetAllAsync(ct);
             var societyNameById = societies.ToDictionary(s => s.SocietyID, s => s.SocietyName);
 
-            var viewModel = operators.Select(o => new OperatorListItemViewModel
-            {
-                UserId = o.Id,
-                FullName = o.FullName,
-                Email = o.Email ?? string.Empty,
-                SocietyName = o.SocietyID.HasValue && societyNameById.TryGetValue(o.SocietyID.Value, out var name)
-                    ? name
-                    : "(unassigned)",
-                IsActive = o.IsActive
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                operators.Select(o => new OperatorListItemViewModel
+                {
+                    UserId = o.Id,
+                    StaffCode = o.StaffCode ?? "—",
+                    FullName = o.FullName,
+                    Email = o.Email ?? string.Empty,
+                    SocietyName = o.SocietyID.HasValue && societyNameById.TryGetValue(o.SocietyID.Value, out var name)
+                        ? name
+                        : "(unassigned)",
+                    IsActive = o.IsActive
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<OperatorListItemViewModel, object?>>
+                {
+                    ["code"] = o => o.StaffCode,
+                    ["name"] = o => o.FullName,
+                    ["email"] = o => o.Email,
+                    ["society"] = o => o.SocietyName,
+                    ["status"] = o => o.IsActive
+                },
+                defaultSort: "name",
+                activeFirst: o => o.IsActive);
 
             return View(viewModel);
         }
@@ -47,14 +60,10 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         [HttpGet]
         public async Task<IActionResult> CreateOperator(CancellationToken ct)
         {
-            var societies = await _societyService.GetAllAsync(ct);
             var model = new OperatorFormViewModel
             {
-                AvailableSocieties = societies.Select(s => new SocietyListItemViewModel
-                {
-                    SocietyID = s.SocietyID,
-                    SocietyName = s.SocietyName
-                }).ToList()
+                StaffCode = await _userManagementService.GetNextOperatorCodeAsync(ct),
+                AvailableSocieties = await LoadSocietyOptionsAsync(ct)
             };
             return View(model);
         }
@@ -65,12 +74,8 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var societies = await _societyService.GetAllAsync(ct);
-                model.AvailableSocieties = societies.Select(s => new SocietyListItemViewModel
-                {
-                    SocietyID = s.SocietyID,
-                    SocietyName = s.SocietyName
-                }).ToList();
+                model.StaffCode = await _userManagementService.GetNextOperatorCodeAsync(ct);
+                model.AvailableSocieties = await LoadSocietyOptionsAsync(ct);
                 return View(model);
             }
 
@@ -82,24 +87,76 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(nameof(model.Email), ex.Message);
-                var societies = await _societyService.GetAllAsync(ct);
-                model.AvailableSocieties = societies.Select(s => new SocietyListItemViewModel
+                model.StaffCode = await _userManagementService.GetNextOperatorCodeAsync(ct);
+                model.AvailableSocieties = await LoadSocietyOptionsAsync(ct);
+                return View(model);
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditOperator(int id, CancellationToken ct)
+        {
+            var user = await _userManagementService.GetOperatorByIdAsync(id, ct);
+            if (user is null)
+            {
+                return NotFound();
+            }
+
+            var model = new OperatorFormViewModel
+            {
+                UserId = user.Id,
+                StaffCode = user.StaffCode ?? string.Empty,
+                FullName = user.FullName,
+                Email = user.Email ?? string.Empty,
+                SocietyID = user.SocietyID ?? 0,
+                AvailableSocieties = await LoadSocietyOptionsAsync(ct)
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditOperator(OperatorFormViewModel model, CancellationToken ct)
+        {
+            if (!ModelState.IsValid)
+            {
+                model.AvailableSocieties = await LoadSocietyOptionsAsync(ct);
+                return View(model);
+            }
+
+            try
+            {
+                await _userManagementService.UpdateOperatorAsync(model, CurrentUserId(), ct);
+                TempData["Success"] = $"Operator '{model.FullName}' updated successfully.";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (BusinessRuleException ex)
+            {
+                if (ex.Message.Contains("Email", StringComparison.OrdinalIgnoreCase))
                 {
-                    SocietyID = s.SocietyID,
-                    SocietyName = s.SocietyName
-                }).ToList();
+                    ModelState.AddModelError(nameof(model.Email), ex.Message);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, ex.Message);
+                }
+
+                model.AvailableSocieties = await LoadSocietyOptionsAsync(ct);
                 return View(model);
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleActive(int id, bool activate, CancellationToken ct)
+        public async Task<IActionResult> ToggleActive(int id, string activate, CancellationToken ct)
         {
+            var shouldActivate = FormBindingHelpers.ParseBoolFormValue(activate);
+
             try
             {
-                await _userManagementService.SetActiveStatusAsync(id, activate, CurrentUserId(), ct);
-                TempData["Success"] = activate ? "Operator activated." : "Operator deactivated.";
+                await _userManagementService.SetActiveStatusAsync(id, shouldActivate, CurrentUserId(), ct);
+                TempData["Success"] = shouldActivate ? "Operator activated." : "Operator deactivated.";
             }
             catch (BusinessRuleException ex)
             {
@@ -114,6 +171,16 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
             var idString = _userManager.GetUserId(User)
                 ?? throw new InvalidOperationException("No authenticated user id found.");
             return int.Parse(idString);
+        }
+
+        private async Task<List<SocietyListItemViewModel>> LoadSocietyOptionsAsync(CancellationToken ct)
+        {
+            var societies = await _societyService.GetAllAsync(ct);
+            return societies.Select(s => new SocietyListItemViewModel
+            {
+                SocietyID = s.SocietyID,
+                SocietyName = s.SocietyName
+            }).ToList();
         }
     }
 }

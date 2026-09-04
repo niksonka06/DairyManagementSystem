@@ -10,32 +10,48 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class MilkRateController : Controller
+    public class MilkRateController : OperatorControllerBase
     {
         private readonly IMilkRateService _milkRateService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public MilkRateController(IMilkRateService milkRateService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _milkRateService = milkRateService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var rates = await _milkRateService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = rates.Select(r => new MilkRateListItemViewModel
-            {
-                RateID = r.RateID,
-                FatPercent = r.FatPercent,
-                RatePerLitre = r.RatePerLitre,
-                EffectiveFrom = r.EffectiveFrom,
-                IsActive = r.IsActive
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                rates.Select(r => new MilkRateListItemViewModel
+                {
+                    RateID = r.RateID,
+                    FatPercentFrom = r.FatPercentFrom,
+                    FatPercentTo = r.FatPercentTo,
+                    SnfPercentFrom = r.SnfPercentFrom,
+                    SnfPercentTo = r.SnfPercentTo,
+                    ClrFrom = r.ClrFrom,
+                    ClrTo = r.ClrTo,
+                    RatePerLitre = r.RatePerLitre,
+                    EffectiveFrom = r.EffectiveFrom,
+                    IsActive = r.IsActive
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<MilkRateListItemViewModel, object?>>
+                {
+                    ["fat"] = r => r.FatPercentFrom,
+                    ["snf"] = r => r.SnfPercentFrom,
+                    ["clr"] = r => r.ClrFrom,
+                    ["rate"] = r => r.RatePerLitre,
+                    ["effective"] = r => r.EffectiveFrom,
+                    ["status"] = r => r.IsActive
+                },
+                defaultSort: "effective",
+                defaultDesc: true,
+                activeFirst: r => r.IsActive);
 
             return View(viewModel);
         }
@@ -60,7 +76,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             try
             {
                 await _milkRateService.CreateAsync(model, CurrentUserId(), ct);
-                TempData["Success"] = $"Rate for {model.FatPercent}% fat added.";
+                TempData["Success"] = $"Rate for fat {model.FatPercentFrom:0.00}–{model.FatPercentTo:0.00}, SNF {model.SnfPercentFrom:0.00}–{model.SnfPercentTo:0.00}, CLR {model.ClrFrom:0.00}–{model.ClrTo:0.00} added.";
                 return RedirectToAction(nameof(Index));
             }
             catch (BusinessRuleException ex)
@@ -84,7 +100,12 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             var model = new MilkRateFormViewModel
             {
                 RateID = rate.RateID,
-                FatPercent = rate.FatPercent,
+                FatPercentFrom = rate.FatPercentFrom,
+                FatPercentTo = rate.FatPercentTo,
+                SnfPercentFrom = rate.SnfPercentFrom,
+                SnfPercentTo = rate.SnfPercentTo,
+                ClrFrom = rate.ClrFrom,
+                ClrTo = rate.ClrTo,
                 RatePerLitre = rate.RatePerLitre,
                 EffectiveFrom = rate.EffectiveFrom,
                 SocietyID = rate.SocietyID,
@@ -126,14 +147,15 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleActive(int id, bool activate, CancellationToken ct)
+        public async Task<IActionResult> ToggleActive(int id, string activate, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
+            var shouldActivate = FormBindingHelpers.ParseBoolFormValue(activate);
 
             try
             {
-                await _milkRateService.SetActiveStatusAsync(id, societyId, activate, CurrentUserId(), ct);
-                TempData["Success"] = activate ? "Rate activated." : "Rate deactivated.";
+                await _milkRateService.SetActiveStatusAsync(id, societyId, shouldActivate, CurrentUserId(), ct);
+                TempData["Success"] = shouldActivate ? "Rate activated." : "Rate deactivated.";
             }
             catch (BusinessRuleException ex)
             {
@@ -141,22 +163,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

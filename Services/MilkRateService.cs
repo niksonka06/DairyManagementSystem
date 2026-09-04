@@ -27,28 +27,41 @@ namespace DairyManagementSystem.Services
         public async Task<MilkRate> CreateAsync(MilkRateFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             var effectiveFrom = model.EffectiveFrom.Date;
+            var fatFrom = model.FatPercentFrom!.Value;
+            var fatTo = model.FatPercentTo!.Value;
+            var snfFrom = model.SnfPercentFrom!.Value;
+            var snfTo = model.SnfPercentTo!.Value;
+            var clrFrom = model.ClrFrom!.Value;
+            var clrTo = model.ClrTo!.Value;
+            var ratePerLitre = model.RatePerLitre!.Value;
 
-            if (await _milkRateRepository.RateExistsAsync(model.SocietyID, model.FatPercent, effectiveFrom, excludingRateId: null, ct))
+            if (await _milkRateRepository.RangeOverlapsAsync(
+                    model.SocietyID, fatFrom, fatTo, snfFrom, snfTo, clrFrom, clrTo, effectiveFrom, excludingRateId: null, ct))
             {
                 throw new BusinessRuleException(
-                    $"A rate for {model.FatPercent}% fat effective {effectiveFrom:dd-MMM-yyyy} already exists for this society.");
+                    $"This fat/SNF/CLR range overlaps another rate effective {effectiveFrom:dd-MMM-yyyy} for this society.");
             }
 
             var rate = new MilkRate
             {
                 SocietyID = model.SocietyID,
-                FatPercent = model.FatPercent,
-                RatePerLitre = model.RatePerLitre,
+                FatPercentFrom = fatFrom,
+                FatPercentTo = fatTo,
+                SnfPercentFrom = snfFrom,
+                SnfPercentTo = snfTo,
+                ClrFrom = clrFrom,
+                ClrTo = clrTo,
+                RatePerLitre = ratePerLitre,
                 EffectiveFrom = effectiveFrom,
                 IsActive = true
             };
 
             _milkRateRepository.Add(rate);
-            await _unitOfWork.SaveChangesAsync(ct); // rate.RateID now populated
+            await _unitOfWork.SaveChangesAsync(ct);
 
             _auditService.Log(nameof(MilkRate), rate.RateID, AuditAction.Created,
                 oldValue: null,
-                newValue: new { rate.FatPercent, rate.RatePerLitre, rate.EffectiveFrom },
+                newValue: RateSnapshot(rate),
                 performedByUserId);
 
             await _unitOfWork.SaveChangesAsync(ct);
@@ -63,32 +76,40 @@ namespace DairyManagementSystem.Services
 
             if (rate.SocietyID != model.SocietyID)
             {
-                // Defense in depth: this should never happen since the
-                // controller always scopes lookups by the operator's own
-                // society, but a mismatch here would mean something tried to
-                // edit another society's rate — refuse outright rather than
-                // silently proceeding.
                 throw new BusinessRuleException("Rate does not belong to this society.");
             }
 
             var effectiveFrom = model.EffectiveFrom.Date;
+            var fatFrom = model.FatPercentFrom!.Value;
+            var fatTo = model.FatPercentTo!.Value;
+            var snfFrom = model.SnfPercentFrom!.Value;
+            var snfTo = model.SnfPercentTo!.Value;
+            var clrFrom = model.ClrFrom!.Value;
+            var clrTo = model.ClrTo!.Value;
+            var ratePerLitre = model.RatePerLitre!.Value;
 
-            if (await _milkRateRepository.RateExistsAsync(model.SocietyID, model.FatPercent, effectiveFrom, excludingRateId: rate.RateID, ct))
+            if (await _milkRateRepository.RangeOverlapsAsync(
+                    model.SocietyID, fatFrom, fatTo, snfFrom, snfTo, clrFrom, clrTo, effectiveFrom, excludingRateId: rate.RateID, ct))
             {
                 throw new BusinessRuleException(
-                    $"A rate for {model.FatPercent}% fat effective {effectiveFrom:dd-MMM-yyyy} already exists for this society.");
+                    $"This fat/SNF/CLR range overlaps another rate effective {effectiveFrom:dd-MMM-yyyy} for this society.");
             }
 
-            var oldSnapshot = new { rate.FatPercent, rate.RatePerLitre, rate.EffectiveFrom };
+            var oldSnapshot = RateSnapshot(rate);
 
-            rate.FatPercent = model.FatPercent;
-            rate.RatePerLitre = model.RatePerLitre;
+            rate.FatPercentFrom = fatFrom;
+            rate.FatPercentTo = fatTo;
+            rate.SnfPercentFrom = snfFrom;
+            rate.SnfPercentTo = snfTo;
+            rate.ClrFrom = clrFrom;
+            rate.ClrTo = clrTo;
+            rate.RatePerLitre = ratePerLitre;
             rate.EffectiveFrom = effectiveFrom;
 
             _milkRateRepository.SetOriginalRowVersion(rate, model.RowVersion!);
 
             _auditService.Log(nameof(MilkRate), rate.RateID, AuditAction.Updated, oldSnapshot,
-                new { rate.FatPercent, rate.RatePerLitre, rate.EffectiveFrom },
+                RateSnapshot(rate),
                 performedByUserId);
 
             await _unitOfWork.SaveChangesAsync(ct);
@@ -120,9 +141,27 @@ namespace DairyManagementSystem.Services
             await _unitOfWork.SaveChangesAsync(ct);
         }
 
-        public async Task<MilkRate?> GetApplicableRateAsync(int societyId, decimal fatPercent, DateTime collectionDate, CancellationToken ct = default)
+        public async Task<MilkRate?> GetApplicableRateAsync(
+            int societyId,
+            decimal fatPercent,
+            decimal snf,
+            decimal clr,
+            DateTime collectionDate,
+            CancellationToken ct = default)
         {
-            return await _milkRateRepository.GetApplicableRateAsync(societyId, fatPercent, collectionDate, ct);
+            return await _milkRateRepository.GetApplicableRateAsync(societyId, fatPercent, snf, clr, collectionDate, ct);
         }
+
+        private static object RateSnapshot(MilkRate rate) => new
+        {
+            rate.FatPercentFrom,
+            rate.FatPercentTo,
+            rate.SnfPercentFrom,
+            rate.SnfPercentTo,
+            rate.ClrFrom,
+            rate.ClrTo,
+            rate.RatePerLitre,
+            rate.EffectiveFrom
+        };
     }
 }

@@ -25,11 +25,15 @@
 <div class="row">
     <div class="col-md-6 mb-4">
         <h5>Fat Distribution</h5>
-        <canvas id="distributionChart" height="200"></canvas>
+        <div class="chart-frame">
+            <canvas id="distributionChart"></canvas>
+        </div>
     </div>
     <div class="col-md-6 mb-4">
         <h5>Average Fat Trend</h5>
-        <canvas id="trendChart" height="200"></canvas>
+        <div class="chart-frame">
+            <canvas id="trendChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -63,7 +67,7 @@
         new Chart(document.getElementById('distributionChart'), {
             type: 'bar',
             data: { labels: distLabels, datasets: [{ label: 'Collections', data: distCounts, backgroundColor: '#0d6efd' }] },
-            options: { plugins: { legend: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
         const trendLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Trend.Select(t => t.Date.ToString("dd-MMM"))));
@@ -72,7 +76,7 @@
         new Chart(document.getElementById('trendChart'), {
             type: 'line',
             data: { labels: trendLabels, datasets: [{ label: 'Avg Fat %', data: trendValues, borderColor: '#198754', tension: 0.2 }] },
-            options: { plugins: { legend: { display: false } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
     </script>
 }

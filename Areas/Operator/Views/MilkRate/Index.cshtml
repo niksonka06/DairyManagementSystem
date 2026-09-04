@@ -1,4 +1,4 @@
-@model List<MilkRateListItemViewModel>
+@model PagedTable<MilkRateListItemViewModel>
 @{
     ViewData["Title"] = "Milk Rate Chart";
 }
@@ -17,23 +17,28 @@
     <div class="alert alert-danger">@TempData["Error"]</div>
 }
 
-<p class="text-muted">When a collection's fat % falls between two rows, the rate for the nearest LOWER fat% is used automatically.</p>
+<p class="text-muted">Enter fat, SNF and CLR bands as from–to. A collection matches when all three values fall inside a band on the latest chart that is effective on that date. Active bands are listed first.</p>
 
+<div class="js-paged-table">
 <table class="table table-striped table-hover align-middle">
     <thead>
         <tr>
-            <th>Fat %</th>
-            <th>Rate / Litre (₹)</th>
-            <th>Effective From</th>
-            <th>Status</th>
+            <sort-th column="fat" title="Fat %" list="Model"></sort-th>
+            <sort-th column="snf" title="SNF" list="Model"></sort-th>
+            <sort-th column="clr" title="CLR" list="Model"></sort-th>
+            <sort-th column="rate" title="Rate / Litre (₹)" list="Model"></sort-th>
+            <sort-th column="effective" title="Effective From" list="Model"></sort-th>
+            <sort-th column="status" title="Status" list="Model"></sort-th>
             <th class="text-end">Actions</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var r in Model)
+        @foreach (var r in Model.Items)
         {
             <tr>
-                <td>@r.FatPercent.ToString("0.0")%</td>
+                <td>@r.FatPercentFrom.ToString("0.00")–@r.FatPercentTo.ToString("0.00")</td>
+                <td>@r.SnfPercentFrom.ToString("0.00")–@r.SnfPercentTo.ToString("0.00")</td>
+                <td>@r.ClrFrom.ToString("0.00")–@r.ClrTo.ToString("0.00")</td>
                 <td>₹@r.RatePerLitre.ToString("0.00")</td>
                 <td>@r.EffectiveFrom.ToString("dd-MMM-yyyy")</td>
                 <td>
@@ -49,7 +54,7 @@
                 <td class="text-end">
                     <a asp-action="Edit" asp-route-id="@r.RateID" class="btn btn-sm btn-outline-primary">Edit</a>
                     <form asp-action="ToggleActive" asp-route-id="@r.RateID" method="post" class="d-inline">
-                        <input type="hidden" name="activate" value="@(!r.IsActive)" />
+                        <input type="hidden" name="activate" value="@(r.IsActive ? "false" : "true")" />
                         @if (r.IsActive)
                         {
                             <button type="submit" class="btn btn-sm btn-outline-secondary">Deactivate</button>
@@ -62,9 +67,11 @@
                 </td>
             </tr>
         }
-        @if (!Model.Any())
+        @if (!Model.Items.Any())
         {
-            <tr><td colspan="5" class="text-center text-muted">No rates yet — add the first one.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted">No rates yet — add the first one.</td></tr>
         }
     </tbody>
 </table>
+<paged-pager list="Model"></paged-pager>
+</div>

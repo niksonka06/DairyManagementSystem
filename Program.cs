@@ -4,10 +4,20 @@ using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Repositories;
 using DairyManagementSystem.Services;
+using DairyManagementSystem.Areas.Operator.Filters;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Suppress the "Server: Kestrel" response header — small info-disclosure
+// hardening, no functional cost.
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
 // QuestPDF requires an explicit license declaration. Community is free for
 // this project's scale (see QuestPDF's licensing terms) — must be set once
@@ -18,7 +28,16 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 // SERVICE REGISTRATION
 // ---------------------------------------------------------------------
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+});
+
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Filters.Add(new AuthorizeFilter());
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -42,13 +61,22 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole<int>>(options =>
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, BCryptPasswordHasher<ApplicationUser>>();
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(options =>
+    options.TokenLifespan = TimeSpan.FromHours(2));
+
 // Secure cookie configuration — directly implements the synopsis's
 // "Session Security: HttpOnly and SameSite=Strict cookie flags" requirement.
+// SameAsRequest in Development so the http launch profile (port 5140) works;
+// Always in production so cookies are never sent over plain HTTP.
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
     options.LoginPath = "/Account/Login";
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
@@ -83,9 +111,29 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAdvancePaymentService, AdvancePaymentService>();
 builder.Services.AddScoped<IDispatchService, DispatchService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAuditLogViewService, AuditLogViewService>();
+builder.Services.AddScoped<EnsureActiveOperatorSocietyFilter>();
 
 builder.Services.AddHttpClient("SmsGateway");
 builder.Services.AddScoped<ISmsService, SmsService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Rate limiting on login specifically — account lockout (Stage 3) stops
+// repeated attempts against ONE account, but doesn't stop an attacker
+// hammering the login endpoint across MANY different email addresses. This
+// closes that gap: 5 login attempts per minute per client, regardless of
+// which account they're targeting.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter("LoginPolicy", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+});
 
 var app = builder.Build();
 
@@ -109,6 +157,27 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseResponseCompression();
+
+// Security response headers — applied to every response, including static
+// files, so this sits before UseStaticFiles. Content-Security-Policy is
+// scoped to exactly the CDN sources this app actually uses (Bootstrap,
+// Chart.js, jQuery validation) rather than a wildcard, which is the whole
+// point of a CSP — an overly permissive one is no protection at all.
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Append("Content-Security-Policy",
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+        "img-src 'self' data:; " +
+        "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com;");
+    await next();
+});
+
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -117,6 +186,7 @@ app.UseRouting();
 // endpoint matched, then these decide *who's allowed* to hit it.
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 app.MapControllerRoute(
     name: "areas",

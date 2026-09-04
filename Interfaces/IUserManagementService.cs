@@ -6,7 +6,10 @@ namespace DairyManagementSystem.Interfaces
     public interface IUserManagementService
     {
         Task<List<ApplicationUser>> GetOperatorsAsync(CancellationToken ct = default);
+        Task<ApplicationUser?> GetOperatorByIdAsync(int userId, CancellationToken ct = default);
+        Task<string> GetNextOperatorCodeAsync(CancellationToken ct = default);
         Task<OperatorCredentialsViewModel> CreateOperatorAsync(OperatorFormViewModel model, int performedByUserId, CancellationToken ct = default);
+        Task UpdateOperatorAsync(OperatorFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task SetActiveStatusAsync(int userId, bool isActive, int performedByUserId, CancellationToken ct = default);
     }
 }

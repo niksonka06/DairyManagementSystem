@@ -16,7 +16,8 @@ namespace DairyManagementSystem.Repositories
         {
             return await DbSet.AsNoTracking()
                 .Where(f => f.SocietyID == societyId)
-                .OrderBy(f => f.ItemType)
+                .OrderByDescending(f => f.IsActive)
+                .ThenBy(f => f.ItemType)
                 .ThenBy(f => f.FeedName)
                 .ToListAsync(ct);
         }

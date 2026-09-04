@@ -17,5 +17,11 @@ namespace DairyManagementSystem.Repositories
             return await DbSet.AnyAsync(
                 s => s.RegistrationNo == normalized && s.SocietyID != (excludingSocietyId ?? 0), ct);
         }
+        public async Task<List<string>> GetRegistrationNumbersAsync(CancellationToken ct = default)
+        {
+            return await DbSet.AsNoTracking()
+                .Select(s => s.RegistrationNo)
+                .ToListAsync(ct);
+        }
     }
 }

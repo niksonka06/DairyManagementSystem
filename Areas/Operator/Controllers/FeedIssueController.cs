@@ -9,43 +9,53 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class FeedIssueController : Controller
+    public class FeedIssueController : OperatorControllerBase
     {
         private readonly IFeedIssueService _feedIssueService;
         private readonly IFeedInventoryService _feedInventoryService;
         private readonly IFarmerService _farmerService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public FeedIssueController(
             IFeedIssueService feedIssueService,
             IFeedInventoryService feedInventoryService,
             IFarmerService farmerService,
             UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _feedIssueService = feedIssueService;
             _feedInventoryService = feedInventoryService;
             _farmerService = farmerService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var issues = await _feedIssueService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = issues.Select(i => new FeedIssueListItemViewModel
-            {
-                IssueID = i.IssueID,
-                FarmerCode = i.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = i.Farmer?.FullName ?? string.Empty,
-                ItemType = i.ItemType,
-                FeedName = i.FeedItem?.FeedName ?? string.Empty,
-                Quantity = i.Quantity,
-                TotalCost = i.TotalCost,
-                IssueDate = i.IssueDate
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                issues.Select(i => new FeedIssueListItemViewModel
+                {
+                    IssueID = i.IssueID,
+                    FarmerCode = i.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = i.Farmer?.FullName ?? string.Empty,
+                    ItemType = i.ItemType,
+                    FeedName = i.FeedItem?.FeedName ?? string.Empty,
+                    Quantity = i.Quantity,
+                    TotalCost = i.TotalCost,
+                    IssueDate = i.IssueDate
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<FeedIssueListItemViewModel, object?>>
+                {
+                    ["date"] = i => i.IssueDate,
+                    ["farmer"] = i => i.FarmerCode + " " + i.FarmerName,
+                    ["type"] = i => i.ItemType.ToString(),
+                    ["item"] = i => i.FeedName,
+                    ["qty"] = i => i.Quantity,
+                    ["cost"] = i => i.TotalCost
+                },
+                defaultSort: "date",
+                defaultDesc: true);
 
             return View(viewModel);
         }
@@ -115,22 +125,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerCode = f.FarmerCode,
                 FullName = f.FullName
             }).ToList();
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

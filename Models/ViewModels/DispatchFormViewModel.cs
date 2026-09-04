@@ -30,6 +30,9 @@ namespace DairyManagementSystem.Models.ViewModels
         [Display(Name = "Total Dispatched (Litres)")]
         public decimal TotalDispatched { get; set; }
 
+        [Display(Name = "Total Collected (Litres)")]
+        public decimal TotalCollected { get; set; }
+
         [StringLength(300)]
         [Display(Name = "Variance Reason (required if variance is above threshold)")]
         public string? VarianceReason { get; set; }

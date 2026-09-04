@@ -9,5 +9,6 @@ namespace DairyManagementSystem.Interfaces
         Task<Dispatch?> GetByIdWithinSocietyAsync(int dispatchId, int societyId, CancellationToken ct = default);
         Task<Dispatch> CreateAsync(DispatchFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task UpdateAsync(DispatchFormViewModel model, int performedByUserId, CancellationToken ct = default);
+        Task<decimal> GetCollectedLitresAsync(int societyId, DateTime date, CancellationToken ct = default);
     }
 }

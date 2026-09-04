@@ -19,7 +19,8 @@
 
     <div class="mb-3">
         <label asp-for="RegistrationNo" class="form-label"></label>
-        <input asp-for="RegistrationNo" class="form-control" />
+        <input asp-for="RegistrationNo" class="form-control" readonly />
+        <div class="form-text">Society code cannot be changed after creation.</div>
         <span asp-validation-for="RegistrationNo" class="text-danger"></span>
     </div>
 

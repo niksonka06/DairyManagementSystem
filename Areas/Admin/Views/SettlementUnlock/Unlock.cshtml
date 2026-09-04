@@ -11,6 +11,7 @@
 
 <form asp-action="Unlock" method="post" class="col-md-6">
     <input type="hidden" asp-for="PaymentID" />
+    <input type="hidden" asp-for="RowVersion" />
 
     <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 

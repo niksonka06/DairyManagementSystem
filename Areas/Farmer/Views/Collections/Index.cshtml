@@ -1,0 +1,84 @@
+@model PagedTable<FarmerCollectionRowViewModel>
+@{
+    ViewData["Title"] = "My Milk Records";
+    DateTime fromDate = ViewBag.FromDate;
+    DateTime toDate = ViewBag.ToDate;
+    decimal totalQty = ViewBag.TotalQuantity ?? 0m;
+    decimal totalAmt = ViewBag.TotalAmount ?? 0m;
+}
+
+<h2 class="mb-4">My Milk Records</h2>
+
+<form method="get" class="row g-2 mb-4 align-items-end">
+    <div class="col-auto">
+        <label class="form-label">From</label>
+        <input type="date" name="from" value="@fromDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <label class="form-label">To</label>
+        <input type="date" name="to" value="@toDate.ToString("yyyy-MM-dd")" class="form-control" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">View</button>
+    </div>
+</form>
+
+<div class="js-paged-table">
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <sort-th column="date" title="Date" list="Model"></sort-th>
+            <sort-th column="shift" title="Shift" list="Model"></sort-th>
+            <sort-th column="qty" title="Qty (L)" list="Model"></sort-th>
+            <sort-th column="fat" title="Fat %" list="Model"></sort-th>
+            <sort-th column="snf" title="SNF" list="Model"></sort-th>
+            <sort-th column="clr" title="CLR" list="Model"></sort-th>
+            <sort-th column="rate" title="Rate" list="Model"></sort-th>
+            <sort-th column="amount" title="Amount" list="Model"></sort-th>
+            <sort-th column="status" title="Status" list="Model"></sort-th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model.Items)
+        {
+            <tr>
+                <td>@r.CollectionDate.ToString("dd-MMM-yyyy")</td>
+                <td>@r.Shift</td>
+                <td>@r.Quantity.ToString("0.00")</td>
+                <td>@r.FatPercent.ToString("0.0")</td>
+                <td>@(r.SNF.HasValue ? r.SNF.Value.ToString("0.0") : "—")</td>
+                <td>@(r.CLR.HasValue ? r.CLR.Value.ToString("0.0") : "—")</td>
+                <td>₹@r.RatePerLitre.ToString("0.00")</td>
+                <td>₹@r.Amount.ToString("0.00")</td>
+                <td>
+                    @if (r.IsLocked)
+                    {
+                        <span class="badge bg-warning text-dark">Settled</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Pending</span>
+                    }
+                </td>
+            </tr>
+        }
+        @if (!Model.Items.Any())
+        {
+            <tr><td colspan="9" class="text-center text-muted">No records in this period.</td></tr>
+        }
+    </tbody>
+    @if (Model.TotalCount > 0)
+    {
+        <tfoot>
+            <tr class="table-active">
+                <th colspan="2">Total</th>
+                <th>@totalQty.ToString("0.00")</th>
+                <th colspan="4"></th>
+                <th>₹@totalAmt.ToString("0.00")</th>
+                <th></th>
+            </tr>
+        </tfoot>
+    }
+</table>
+<paged-pager list="Model"></paged-pager>
+</div>

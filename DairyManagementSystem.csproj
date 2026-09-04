@@ -8,6 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- SMTP (Gmail) for password-reset mail. App password stays in User Secrets. -->
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+    <PackageReference Include="MailKit" Version="4.17.0" />
+
     <!-- Identity + Authentication -->
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.10" />

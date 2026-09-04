@@ -18,6 +18,8 @@ namespace DairyManagementSystem.Models.ViewModels
     {
         public int PaymentID { get; set; }
 
+        public byte[]? RowVersion { get; set; }
+
         [Required(ErrorMessage = "A reason is required to unlock a generated settlement.")]
         [StringLength(500)]
         public string Reason { get; set; } = string.Empty;

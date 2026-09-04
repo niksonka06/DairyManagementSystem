@@ -37,7 +37,7 @@ namespace DairyManagementSystem.Services
                 ItemType = model.ItemType,
                 FeedName = model.FeedName.Trim(),
                 Unit = model.Unit.Trim(),
-                PricePerUnit = model.PricePerUnit,
+                PricePerUnit = model.PricePerUnit!.Value,
                 LowStockThreshold = model.LowStockThreshold,
                 StockQuantity = 0, // new items start empty — stock is added via AddStockAsync, its own audited workflow
                 IsActive = true,
@@ -78,7 +78,7 @@ namespace DairyManagementSystem.Services
             item.ItemType = model.ItemType;
             item.FeedName = model.FeedName.Trim();
             item.Unit = model.Unit.Trim();
-            item.PricePerUnit = model.PricePerUnit;
+            item.PricePerUnit = model.PricePerUnit!.Value;
             item.LowStockThreshold = model.LowStockThreshold;
 
             _feedInventoryRepository.SetOriginalRowVersion(item, model.RowVersion!);
@@ -96,11 +96,11 @@ namespace DairyManagementSystem.Services
                 ?? throw new BusinessRuleException("Item not found.");
 
             var oldQuantity = item.StockQuantity;
-            item.StockQuantity += model.QuantityToAdd;
+            item.StockQuantity += model.QuantityToAdd!.Value;
 
             _auditService.Log(nameof(FeedInventory), item.FeedItemID, AuditAction.Updated,
                 oldValue: new { StockQuantity = oldQuantity },
-                newValue: new { StockQuantity = item.StockQuantity, Added = model.QuantityToAdd },
+                newValue: new { StockQuantity = item.StockQuantity, Added = model.QuantityToAdd!.Value },
                 performedByUserId);
 
             await _unitOfWork.SaveChangesAsync(ct);

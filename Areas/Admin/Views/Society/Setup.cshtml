@@ -1,0 +1,89 @@
+@model SocietySetupViewModel
+@{
+    ViewData["Title"] = "Setup New Society";
+}
+
+<h2 class="mb-4">Setup New Society</h2>
+<p class="text-muted mb-4">Create a society and optionally add its first operator in one step.</p>
+
+<form asp-action="Setup" method="post" class="col-lg-8">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">Society Details</div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label asp-for="SocietyName" class="form-label"></label>
+                <input asp-for="SocietyName" class="form-control" />
+                <span asp-validation-for="SocietyName" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="RegistrationNo" class="form-label"></label>
+                <input asp-for="RegistrationNo" class="form-control" readonly />
+                <div class="form-text">Assigned automatically.</div>
+                <span asp-validation-for="RegistrationNo" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Address" class="form-label"></label>
+                <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Address" class="text-danger"></span>
+            </div>
+
+            <div class="mb-0">
+                <label asp-for="ContactPhone" class="form-label"></label>
+                <input asp-for="ContactPhone" class="form-control" />
+                <span asp-validation-for="ContactPhone" class="text-danger"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header fw-semibold">First Operator (optional)</div>
+        <div class="card-body">
+            <div class="form-check mb-3">
+                <input asp-for="CreateOperator" class="form-check-input" id="createOperatorToggle" />
+                <label asp-for="CreateOperator" class="form-check-label"></label>
+            </div>
+
+            <div id="operatorFields">
+                <div class="mb-3">
+                    <label asp-for="OperatorFullName" class="form-label"></label>
+                    <input asp-for="OperatorFullName" class="form-control" />
+                    <span asp-validation-for="OperatorFullName" class="text-danger"></span>
+                </div>
+
+                <div class="mb-0">
+                    <label asp-for="OperatorEmail" class="form-label"></label>
+                    <input asp-for="OperatorEmail" class="form-control" />
+                    <span asp-validation-for="OperatorEmail" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Society</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const toggle = document.getElementById('createOperatorToggle');
+            const fields = document.getElementById('operatorFields');
+
+            function syncOperatorFields() {
+                const enabled = toggle.checked;
+                fields.style.opacity = enabled ? '1' : '0.5';
+                fields.querySelectorAll('input').forEach(function (input) {
+                    input.disabled = !enabled;
+                });
+            }
+
+            toggle.addEventListener('change', syncOperatorFields);
+            syncOperatorFields();
+        })();
+    </script>
+}

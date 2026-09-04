@@ -52,12 +52,12 @@
         </div>
         <div class="col-md-4 mb-3">
             <label asp-for="CLR" class="form-label"></label>
-            <input asp-for="CLR" class="form-control" type="number" step="0.1" />
+            <input asp-for="CLR" class="form-control" type="number" step="1" min="0" max="50" />
             <span asp-validation-for="CLR" class="text-danger"></span>
         </div>
     </div>
 
-    <p class="text-muted">Rate and amount are recalculated automatically based on the fat % and date above.</p>
+    <p class="text-muted">Rate and amount are recalculated automatically from fat %, SNF, CLR and date above.</p>
 
     <button type="submit" class="btn btn-primary">Save Changes</button>
     <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>

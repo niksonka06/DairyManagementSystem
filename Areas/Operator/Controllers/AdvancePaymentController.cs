@@ -9,35 +9,43 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class AdvancePaymentController : Controller
+    public class AdvancePaymentController : OperatorControllerBase
     {
         private readonly IAdvancePaymentService _advancePaymentService;
         private readonly IFarmerService _farmerService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public AdvancePaymentController(IAdvancePaymentService advancePaymentService, IFarmerService farmerService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _advancePaymentService = advancePaymentService;
             _farmerService = farmerService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var advances = await _advancePaymentService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = advances.Select(a => new AdvancePaymentListItemViewModel
-            {
-                AdvancePaymentID = a.AdvancePaymentID,
-                FarmerCode = a.Farmer?.FarmerCode ?? string.Empty,
-                FarmerName = a.Farmer?.FullName ?? string.Empty,
-                Amount = a.Amount,
-                PaymentDate = a.PaymentDate,
-                IsApplied = a.IsApplied
-            }).ToList();
+            var viewModel = ListPaging.Apply(
+                advances.Select(a => new AdvancePaymentListItemViewModel
+                {
+                    AdvancePaymentID = a.AdvancePaymentID,
+                    FarmerCode = a.Farmer?.FarmerCode ?? string.Empty,
+                    FarmerName = a.Farmer?.FullName ?? string.Empty,
+                    Amount = a.Amount,
+                    PaymentDate = a.PaymentDate,
+                    IsApplied = a.IsApplied
+                }),
+                sort, dir, page,
+                new Dictionary<string, Func<AdvancePaymentListItemViewModel, object?>>
+                {
+                    ["date"] = a => a.PaymentDate,
+                    ["farmer"] = a => a.FarmerCode + " " + a.FarmerName,
+                    ["amount"] = a => a.Amount,
+                    ["status"] = a => a.IsApplied
+                },
+                defaultSort: "date",
+                defaultDesc: true);
 
             return View(viewModel);
         }
@@ -88,22 +96,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 FarmerCode = f.FarmerCode,
                 FullName = f.FullName
             }).ToList();
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

@@ -10,7 +10,7 @@ namespace DairyManagementSystem.Models.ViewModels
 
         [Required]
         [Range(0.01, 1000000, ErrorMessage = "Amount must be greater than 0.")]
-        public decimal Amount { get; set; }
+        public decimal? Amount { get; set; }
 
         [Required]
         [DataType(DataType.Date)]

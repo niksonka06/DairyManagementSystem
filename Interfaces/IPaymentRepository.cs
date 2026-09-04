@@ -12,15 +12,19 @@ namespace DairyManagementSystem.Interfaces
         // for this farmer covering this exact period?
         Task<bool> ExistsNonCancelledForPeriodAsync(int farmerId, DateTime periodStart, int? excludingPaymentId, CancellationToken ct = default);
 
-        // Powers the "suggested Previous Due" — the most recent non-Cancelled
-        // settlement before this period, if its NetAmount was never
-        // superseded (we don't track partial payments, so "unpaid" here
-        // means Status != Paid).
-        Task<Payment?> GetMostRecentUnpaidBeforeAsync(int farmerId, DateTime periodStart, CancellationToken ct = default);
+        // Latest Generated/Paid settlement before this period — used to carry
+        // a negative net (farmer owes the society) into next week's settlement.
+        Task<Payment?> GetMostRecentBeforeAsync(int farmerId, DateTime periodStart, CancellationToken ct = default);
 
         // Cross-society view for the Admin unlock screen (Stage 10's
         // "unlock requires reason" requirement) — Admin isn't scoped to one
         // society like an Operator is.
         Task<List<Payment>> GetGeneratedAcrossAllSocietiesAsync(CancellationToken ct = default);
+
+        // Farmer Portal — own settlement history and a single settlement's
+        // details, both scoped by FarmerID so a farmer can never view (let
+        // alone guess the ID of) another farmer's settlement.
+        Task<List<Payment>> GetByFarmerAsync(int farmerId, CancellationToken ct = default);
+        Task<Payment?> GetByIdForFarmerAsync(int paymentId, int farmerId, CancellationToken ct = default);
     }
 }

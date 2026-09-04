@@ -10,25 +10,22 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Areas.Operator.Controllers
 {
-    [Area("Operator")]
-    [Authorize(Roles = Roles.Operator)]
-    public class FeedInventoryController : Controller
+    public class FeedInventoryController : OperatorControllerBase
     {
         private readonly IFeedInventoryService _feedInventoryService;
-        private readonly UserManager<ApplicationUser> _userManager;
 
         public FeedInventoryController(IFeedInventoryService feedInventoryService, UserManager<ApplicationUser> userManager)
+            : base(userManager)
         {
             _feedInventoryService = feedInventoryService;
-            _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(CancellationToken ct)
+        public async Task<IActionResult> Index(string? sort, string? dir, int page, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var items = await _feedInventoryService.GetBySocietyAsync(societyId, ct);
 
-            var viewModel = items.Select(f => new FeedInventoryListItemViewModel
+            var all = items.Select(f => new FeedInventoryListItemViewModel
             {
                 FeedItemID = f.FeedItemID,
                 ItemType = f.ItemType,
@@ -39,6 +36,22 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 LowStockThreshold = f.LowStockThreshold,
                 IsActive = f.IsActive
             }).ToList();
+
+            ViewBag.LowStockCount = all.Count(m => m.IsLowStock && m.IsActive);
+
+            var viewModel = ListPaging.Apply(
+                all, sort, dir, page,
+                new Dictionary<string, Func<FeedInventoryListItemViewModel, object?>>
+                {
+                    ["type"] = f => f.ItemType.ToString(),
+                    ["name"] = f => f.FeedName,
+                    ["unit"] = f => f.Unit,
+                    ["price"] = f => f.PricePerUnit,
+                    ["stock"] = f => f.StockQuantity,
+                    ["status"] = f => f.IsActive
+                },
+                defaultSort: "name",
+                activeFirst: f => f.IsActive);
 
             return View(viewModel);
         }
@@ -174,14 +187,15 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ToggleActive(int id, bool activate, CancellationToken ct)
+        public async Task<IActionResult> ToggleActive(int id, string activate, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
+            var shouldActivate = FormBindingHelpers.ParseBoolFormValue(activate);
 
             try
             {
-                await _feedInventoryService.SetActiveStatusAsync(id, societyId, activate, CurrentUserId(), ct);
-                TempData["Success"] = activate ? "Item activated." : "Item deactivated.";
+                await _feedInventoryService.SetActiveStatusAsync(id, societyId, shouldActivate, CurrentUserId(), ct);
+                TempData["Success"] = shouldActivate ? "Item activated." : "Item deactivated.";
             }
             catch (BusinessRuleException ex)
             {
@@ -189,22 +203,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
 
             return RedirectToAction(nameof(Index));
-        }
-
-        private int CurrentUserId()
-        {
-            var idString = _userManager.GetUserId(User)
-                ?? throw new InvalidOperationException("No authenticated user id found.");
-            return int.Parse(idString);
-        }
-
-        private async Task<int> CurrentOperatorSocietyIdAsync()
-        {
-            var user = await _userManager.GetUserAsync(User)
-                ?? throw new InvalidOperationException("No authenticated user found.");
-
-            return user.SocietyID
-                ?? throw new InvalidOperationException("This Operator account has no SocietyID assigned. Contact an Admin.");
         }
     }
 }

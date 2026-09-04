@@ -1,0 +1,48 @@
+@model OperatorFormViewModel
+@{
+    ViewData["Title"] = "Edit Operator";
+}
+
+<h2 class="mb-4">Edit Operator</h2>
+
+<form asp-action="EditOperator" method="post" class="col-md-6">
+    <input type="hidden" asp-for="UserId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+    <div class="mb-3">
+        <label asp-for="StaffCode" class="form-label"></label>
+        <input asp-for="StaffCode" class="form-control" readonly />
+        <div class="form-text">Operator code cannot be changed after creation.</div>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="FullName" class="form-label"></label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="SocietyID" class="form-label"></label>
+        <select asp-for="SocietyID" class="form-select">
+            <option value="">-- Select Society --</option>
+            @foreach (var s in Model.AvailableSocieties)
+            {
+                <option value="@s.SocietyID">@s.SocietyName</option>
+            }
+        </select>
+        <span asp-validation-for="SocietyID" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -33,6 +33,11 @@ namespace DairyManagementSystem.Services
             return await _feedIssueRepository.GetBySocietyAsync(societyId, ct);
         }
 
+        public async Task<List<FeedIssue>> GetByFarmerAsync(int farmerId, int societyId, CancellationToken ct = default)
+        {
+            return await _feedIssueRepository.GetByFarmerAsync(farmerId, societyId, ct);
+        }
+
         public async Task<FeedIssue> IssueToFarmerAsync(FeedIssueFormViewModel model, int performedByUserId, CancellationToken ct = default)
         {
             // Ownership checks — never trust that a posted FeedItemID/FarmerID
@@ -51,6 +56,11 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException("Selected farmer does not belong to this society.");
             }
 
+            if (!farmer.IsActive)
+            {
+                throw new BusinessRuleException("Selected farmer is inactive and cannot receive feed or medicine issues.");
+            }
+
             // ── The synopsis's exact atomic sequence ──────────────────────
             // Check stock -> Deduct stock -> Create farmer issue record ->
             // Create deduction -> Commit transaction. If anything fails,
@@ -66,15 +76,17 @@ namespace DairyManagementSystem.Services
             // that commits independently, like Identity's UserManager —
             // not the case here.
 
+            var quantity = model.Quantity!.Value;
+
             // 1. CHECK STOCK
-            if (item.StockQuantity < model.Quantity)
+            if (item.StockQuantity < quantity)
             {
                 throw new BusinessRuleException(
-                    $"Insufficient stock for '{item.FeedName}'. Available: {item.StockQuantity} {item.Unit}, requested: {model.Quantity} {item.Unit}.");
+                    $"Insufficient stock for '{item.FeedName}'. Available: {item.StockQuantity} {item.Unit}, requested: {quantity} {item.Unit}.");
             }
 
             // 2. DEDUCT STOCK
-            item.StockQuantity -= model.Quantity;
+            item.StockQuantity -= quantity;
 
             // 3. CREATE FARMER ISSUE RECORD (+ 4. DEDUCTION, captured on the same row via TotalCost)
             var issue = new FeedIssue
@@ -83,9 +95,9 @@ namespace DairyManagementSystem.Services
                 FarmerID = farmer.FarmerID,
                 SocietyID = model.SocietyID,
                 ItemType = item.ItemType,
-                Quantity = model.Quantity,
+                Quantity = quantity,
                 UnitPriceAtIssue = item.PricePerUnit, // snapshot — see FeedIssue class comment
-                TotalCost = model.Quantity * item.PricePerUnit,
+                TotalCost = quantity * item.PricePerUnit,
                 IssueDate = model.IssueDate.Date,
                 IssuedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,

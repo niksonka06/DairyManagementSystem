@@ -4,9 +4,7 @@ namespace DairyManagementSystem.Models.Entities
     {
         public int FarmerID { get; set; }
 
-        // Society-scoped unique code (e.g. "SOC001-F001") — human-friendly
-        // reference used on receipts, settlement slips, and as the basis for
-        // the farmer's synthetic login email.
+        // Society-scoped unique code (e.g. "F001") — used on receipts and settlement slips.
         public string FarmerCode { get; set; } = string.Empty;
 
         public string FullName { get; set; } = string.Empty;

@@ -1,0 +1,66 @@
+@model FarmerDashboardViewModel
+@{
+    ViewData["Title"] = "My Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h2 class="mb-1">Welcome, @Model.FullName</h2>
+        <p class="text-muted mb-0">Farmer Code: @Model.FarmerCode · @Model.OverviewDate.ToString("dd-MMM-yyyy")</p>
+    </div>
+    <partial name="_DashboardDateFilter" model="Model.OverviewDate" />
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">Milk on this date</h6>
+            <p class="fs-4 mb-0">@Model.TodayQuantity.ToString("0.00") L</p>
+            <small class="text-muted">₹@Model.TodayAmount.ToString("0.00")</small>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">This Month</h6>
+            <p class="fs-4 mb-0">@Model.MonthlyQuantity.ToString("0.00") L</p>
+            <small class="text-muted">Avg Fat: @Model.MonthlyAverageFat.ToString("0.00")%</small>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">Pending Feed Deduction</h6>
+            <p class="fs-4 mb-0">₹@Model.PendingFeedDeduction.ToString("0.00")</p>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card"><div class="card-body">
+            <h6 class="text-muted">Pending Medicine Deduction</h6>
+            <p class="fs-4 mb-0">₹@Model.PendingMedicineDeduction.ToString("0.00")</p>
+        </div></div>
+    </div>
+</div>
+
+<h5>Latest Settlement</h5>
+@if (Model.HasLatestSettlement)
+{
+    <div class="card mb-4" style="max-width: 30rem;">
+        <div class="card-body">
+            <p class="mb-1">@Model.LatestSettlementPeriodStart.ToString("dd-MMM-yyyy") to @Model.LatestSettlementPeriodEnd.ToString("dd-MMM-yyyy")</p>
+            <p class="fs-4 mb-1">₹@Model.LatestSettlementNetAmount.ToString("0.00")</p>
+            <span class="badge bg-secondary">@Model.LatestSettlementStatus</span>
+        </div>
+    </div>
+}
+else
+{
+    <p class="text-muted">No settlements yet.</p>
+}
+
+<div class="row g-3">
+    <div class="col-auto">
+        <a asp-controller="Collections" asp-action="Index" class="btn btn-primary">My Milk Records</a>
+    </div>
+    <div class="col-auto">
+        <a asp-controller="Settlements" asp-action="Index" class="btn btn-primary">My Settlements</a>
+    </div>
+</div>
