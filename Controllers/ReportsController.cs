@@ -119,14 +119,14 @@ namespace DairyManagementSystem.Controllers
             var m = await _reportService.GetFarmerSettlementReportAsync(resolvedSocietyId.Value, f, t, ct);
             var section = new PdfSection
             {
-                Headers = new[] { "Farmer", "Period", "Gross", "Feed", "Medicine", "Other", "Prev Due", "Advance", "Net", "Status" },
+                Headers = new[] { "Farmer", "Period", "Gross", "Feed", "Medicine", "Other", "Opening", "Advance", "Net", "Closing", "Status" },
                 Rows = m.Rows.Select(r => new[]
                 {
                     $"{r.FarmerCode} - {r.FarmerName}",
                     $"{r.PeriodStart:dd-MMM} to {r.PeriodEnd:dd-MMM}",
                     r.GrossAmount.ToString("0.00"), r.FeedDeduction.ToString("0.00"), r.MedicineDeduction.ToString("0.00"),
-                    r.OtherDeductionsTotal.ToString("0.00"), r.PreviousDue.ToString("0.00"), r.AdvancePaid.ToString("0.00"),
-                    r.NetAmount.ToString("0.00"), r.Status.ToString()
+                    r.OtherDeductionsTotal.ToString("0.00"), r.OpeningBalance.ToString("0.00"), r.AdvancePaid.ToString("0.00"),
+                    r.NetAmount.ToString("0.00"), r.ClosingBalance.ToString("0.00"), r.Status.ToString()
                 }).ToList()
             };
             var pdf = PdfReportGenerator.Generate("Farmer Settlement Report", $"{f:dd-MMM-yyyy} to {t:dd-MMM-yyyy}", new[] { section },

@@ -37,7 +37,17 @@ namespace DairyManagementSystem.Repositories
         {
             return await DbSet
                 .Include(c => c.Farmer)
+                .Include(c => c.Society)
                 .FirstOrDefaultAsync(c => c.CollectionID == collectionId && c.SocietyID == societyId, ct);
+        }
+
+        public async Task<MilkCollection?> GetByIdForFarmerAsync(int collectionId, int farmerId, CancellationToken ct = default)
+        {
+            return await DbSet
+                .Include(c => c.Farmer)
+                .Include(c => c.Society)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(c => c.CollectionID == collectionId && c.FarmerID == farmerId, ct);
         }
 
         public async Task<List<MilkCollection>> GetUnlockedByFarmerAndPeriodAsync(int farmerId, DateTime periodStart, DateTime periodEnd, CancellationToken ct = default)

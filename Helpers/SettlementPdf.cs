@@ -18,9 +18,10 @@ namespace DairyManagementSystem.Helpers
                 rows.Add(new[] { $"{line.DeductionType} deduction", $"-Rs.{line.Amount:0.00}" });
             }
 
-            rows.Add(new[] { "Carry-forward from previous week", $"Rs.{payment.PreviousDue:0.00}" });
+            rows.Add(new[] { "Opening balance", $"Rs.{payment.OpeningBalance:0.00}" });
             rows.Add(new[] { "Advance paid", $"-Rs.{payment.AdvancePaid:0.00}" });
             rows.Add(new[] { "Net amount", $"Rs.{payment.NetAmount:0.00}" });
+            rows.Add(new[] { "Closing balance", $"Rs.{payment.ClosingBalance:0.00}" });
 
             var note = payment.NetAmount < 0
                 ? "Net is negative: this amount is carried to the next weekly settlement as a deduction. No payout this week."

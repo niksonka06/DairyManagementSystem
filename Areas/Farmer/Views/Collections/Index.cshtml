@@ -36,6 +36,7 @@
             <sort-th column="rate" title="Rate" list="Model"></sort-th>
             <sort-th column="amount" title="Amount" list="Model"></sort-th>
             <sort-th column="status" title="Status" list="Model"></sort-th>
+            <th class="text-end">Receipt</th>
         </tr>
     </thead>
     <tbody>
@@ -60,11 +61,14 @@
                         <span class="badge bg-secondary">Pending</span>
                     }
                 </td>
+                <td class="text-end">
+                    <a asp-action="Receipt" asp-route-id="@r.CollectionID" class="btn btn-sm btn-outline-secondary">Receipt</a>
+                </td>
             </tr>
         }
         @if (!Model.Items.Any())
         {
-            <tr><td colspan="9" class="text-center text-muted">No records in this period.</td></tr>
+            <tr><td colspan="10" class="text-center text-muted">No records in this period.</td></tr>
         }
     </tbody>
     @if (Model.TotalCount > 0)
@@ -75,7 +79,7 @@
                 <th>@totalQty.ToString("0.00")</th>
                 <th colspan="4"></th>
                 <th>₹@totalAmt.ToString("0.00")</th>
-                <th></th>
+                <th colspan="2"></th>
             </tr>
         </tfoot>
     }

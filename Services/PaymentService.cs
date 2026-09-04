@@ -105,10 +105,10 @@ namespace DairyManagementSystem.Services
                 OtherDeductionsTotal = otherDeductionsTotal,
                 PreviousDue = previousDue.Value,
                 AdvancePaid = advancePaid,
-                NetAmount = ComputeNet(gross, feedDeduction, medicineDeduction, otherDeductionsTotal, previousDue.Value, advancePaid),
                 Status = SettlementStatus.Draft,
                 CreatedAt = DateTime.UtcNow
             };
+            ApplyTotals(payment, gross, feedDeduction, medicineDeduction, otherDeductionsTotal, previousDue.Value, advancePaid);
 
             await ExecuteInTransactionAsync(async () =>
             {
@@ -151,7 +151,7 @@ namespace DairyManagementSystem.Services
                 payment.FeedDeduction = feedDeduction;
                 payment.MedicineDeduction = medicineDeduction;
                 payment.AdvancePaid = advancePaid;
-                payment.NetAmount = ComputeNet(gross, feedDeduction, medicineDeduction, payment.OtherDeductionsTotal, payment.PreviousDue, advancePaid);
+                ApplyTotals(payment, gross, feedDeduction, medicineDeduction, payment.OtherDeductionsTotal, payment.PreviousDue, advancePaid);
 
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.Updated,
                     oldSnapshot,
@@ -196,7 +196,7 @@ namespace DairyManagementSystem.Services
                 payment.FeedDeduction = feedDeduction;
                 payment.MedicineDeduction = medicineDeduction;
                 payment.AdvancePaid = advancePaid;
-                payment.NetAmount = ComputeNet(gross, feedDeduction, medicineDeduction, payment.OtherDeductionsTotal, payment.PreviousDue, advancePaid);
+                ApplyTotals(payment, gross, feedDeduction, medicineDeduction, payment.OtherDeductionsTotal, payment.PreviousDue, advancePaid);
 
                 // LOCK every collection and feed issue this settlement consumed —
                 // the synopsis's core settlement-locking rule. Once Generated,
@@ -427,11 +427,20 @@ namespace DairyManagementSystem.Services
             return (gross, feedDeduction, medicineDeduction);
         }
 
-        private static decimal ComputeNet(decimal gross, decimal feedDeduction, decimal medicineDeduction, decimal otherDeductionsTotal, decimal previousDue, decimal advancePaid)
+        private static void ApplyTotals(
+            Payment payment,
+            decimal gross,
+            decimal feedDeduction,
+            decimal medicineDeduction,
+            decimal otherDeductionsTotal,
+            decimal previousDue,
+            decimal advancePaid)
         {
-            // The exact formula from the synopsis:
-            // GrossAmount - FeedDeduction - MedicineDeduction - OtherDeductions + PreviousDue - AdvancePaid = NetAmount
-            return gross - feedDeduction - medicineDeduction - otherDeductionsTotal + previousDue - advancePaid;
+            var totals = SettlementCalculator.Compute(
+                gross, feedDeduction, medicineDeduction, otherDeductionsTotal, previousDue, advancePaid);
+            payment.NetAmount = totals.NetAmount;
+            payment.OpeningBalance = totals.OpeningBalance;
+            payment.ClosingBalance = totals.ClosingBalance;
         }
 
         private void AddDeductionLines(int paymentId, SettlementCreateViewModel model)

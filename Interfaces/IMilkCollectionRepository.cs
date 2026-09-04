@@ -10,6 +10,7 @@ namespace DairyManagementSystem.Interfaces
         Task<MilkCollection?> GetByFarmerDateShiftAsync(int farmerId, DateTime date, Shift shift, int? excludingCollectionId, CancellationToken ct = default);
 
         Task<MilkCollection?> GetByIdWithinSocietyAsync(int collectionId, int societyId, CancellationToken ct = default);
+        Task<MilkCollection?> GetByIdForFarmerAsync(int collectionId, int farmerId, CancellationToken ct = default);
 
         // Used by Settlement generation — only UNLOCKED collections in the
         // period are eligible. Returns tracked entities since Generate needs

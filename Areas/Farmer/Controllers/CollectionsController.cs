@@ -39,6 +39,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             var rows = collections.Select(c => new FarmerCollectionRowViewModel
             {
+                CollectionID = c.CollectionID,
                 CollectionDate = c.CollectionDate,
                 Shift = c.Shift,
                 Quantity = c.Quantity,
@@ -78,6 +79,29 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
                 });
 
             return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Receipt(int id, CancellationToken ct)
+        {
+            var farmer = await CurrentFarmerAsync(ct);
+            if (farmer is null)
+            {
+                return NotFound();
+            }
+
+            var collection = await _collectionService.GetByIdForFarmerAsync(id, farmer.FarmerID, ct);
+            if (collection is null)
+            {
+                return NotFound();
+            }
+
+            var pdf = CollectionReceiptPdf.Generate(
+                collection,
+                farmer.FarmerCode,
+                farmer.FullName,
+                collection.Society?.SocietyName ?? string.Empty);
+            return File(pdf, "application/pdf", $"CollectionReceipt_{farmer.FarmerCode}_{collection.CollectionDate:yyyyMMdd}_{collection.Shift}.pdf");
         }
 
         private async Task<Models.Entities.Farmer?> CurrentFarmerAsync(CancellationToken ct)

@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DairyManagementSystem.Tests\**" />
+    <Content Remove="DairyManagementSystem.Tests\**" />
+    <None Remove="DairyManagementSystem.Tests\**" />
+    <EmbeddedResource Remove="DairyManagementSystem.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- SMTP (Gmail) for password-reset mail. App password stays in User Secrets. -->
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="MailKit" Version="4.17.0" />

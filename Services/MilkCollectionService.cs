@@ -38,6 +38,11 @@ namespace DairyManagementSystem.Services
             return await _collectionRepository.GetByIdWithinSocietyAsync(collectionId, societyId, ct);
         }
 
+        public async Task<MilkCollection?> GetByIdForFarmerAsync(int collectionId, int farmerId, CancellationToken ct = default)
+        {
+            return await _collectionRepository.GetByIdForFarmerAsync(collectionId, farmerId, ct);
+        }
+
         public async Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default)
         {
             return await _collectionRepository.GetByFarmerAndDateRangeAsync(farmerId, from, to, ct);
@@ -104,7 +109,7 @@ namespace DairyManagementSystem.Services
                 SNF = snf,
                 CLR = clr,
                 RatePerLitre = applicableRate.RatePerLitre, // snapshot — see class comment on MilkCollection
-                Amount = quantity * applicableRate.RatePerLitre,
+                Amount = SettlementCalculator.ComputeCollectionAmount(quantity, applicableRate.RatePerLitre),
                 RecordedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,
                 IsLocked = false
@@ -183,7 +188,7 @@ namespace DairyManagementSystem.Services
             collection.SNF = snf;
             collection.CLR = clr;
             collection.RatePerLitre = applicableRate.RatePerLitre;
-            collection.Amount = quantity * applicableRate.RatePerLitre;
+            collection.Amount = SettlementCalculator.ComputeCollectionAmount(quantity, applicableRate.RatePerLitre);
 
             _collectionRepository.SetOriginalRowVersion(collection, model.RowVersion!);
 

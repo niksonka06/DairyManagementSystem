@@ -129,6 +129,23 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> Receipt(int id, CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var collection = await _collectionService.GetByIdWithinSocietyAsync(id, societyId, ct);
+            if (collection is null)
+            {
+                return NotFound();
+            }
+
+            var farmerCode = collection.Farmer?.FarmerCode ?? string.Empty;
+            var farmerName = collection.Farmer?.FullName ?? string.Empty;
+            var societyName = collection.Society?.SocietyName ?? string.Empty;
+            var pdf = CollectionReceiptPdf.Generate(collection, farmerCode, farmerName, societyName);
+            return File(pdf, "application/pdf", $"CollectionReceipt_{farmerCode}_{collection.CollectionDate:yyyyMMdd}_{collection.Shift}.pdf");
+        }
+
         private async Task<MilkCollectionPageViewModel> BuildPageAsync(
             DateTime day,
             MilkCollectionFormViewModel form,

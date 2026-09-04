@@ -4,6 +4,7 @@ namespace DairyManagementSystem.Models.ViewModels
 {
     public class FarmerCollectionRowViewModel
     {
+        public int CollectionID { get; set; }
         public DateTime CollectionDate { get; set; }
         public Shift Shift { get; set; }
         public decimal Quantity { get; set; }

@@ -138,7 +138,8 @@
                                             <span class="badge bg-success">Open</span>
                                         }
                                     </td>
-                                    <td class="text-end">
+                                    <td class="text-end text-nowrap">
+                                        <a asp-action="Receipt" asp-route-id="@c.CollectionID" class="btn btn-sm btn-outline-secondary">Receipt</a>
                                         @if (!c.IsLocked)
                                         {
                                             <a asp-action="Edit" asp-route-id="@c.CollectionID" class="btn btn-sm btn-outline-primary">Edit</a>

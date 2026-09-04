@@ -235,6 +235,8 @@ namespace DairyManagementSystem.Data
                 entity.Property(p => p.OtherDeductionsTotal).HasColumnType("decimal(12,2)");
                 entity.Property(p => p.PreviousDue).HasColumnType("decimal(12,2)");
                 entity.Property(p => p.AdvancePaid).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.OpeningBalance).HasColumnType("decimal(12,2)");
+                entity.Property(p => p.ClosingBalance).HasColumnType("decimal(12,2)");
                 entity.Property(p => p.NetAmount).HasColumnType("decimal(12,2)");
                 entity.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
                 entity.Property(p => p.CancellationReason).HasMaxLength(500);

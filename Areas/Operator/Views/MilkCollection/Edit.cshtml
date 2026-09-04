@@ -60,6 +60,7 @@
     <p class="text-muted">Rate and amount are recalculated automatically from fat %, SNF, CLR and date above.</p>
 
     <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a asp-action="Receipt" asp-route-id="@Model.CollectionID" class="btn btn-outline-primary">Download receipt</a>
     <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
 </form>
 

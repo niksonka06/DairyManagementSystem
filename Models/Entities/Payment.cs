@@ -34,6 +34,12 @@ namespace DairyManagementSystem.Models.Entities
         public decimal PreviousDue { get; set; }
         public decimal AdvancePaid { get; set; }
 
+        // Synopsis SettlementDTO named balances. OpeningBalance is the
+        // unpaid carry-in (same value as PreviousDue). ClosingBalance is
+        // this cycle's result (same value as NetAmount).
+        public decimal OpeningBalance { get; set; }
+        public decimal ClosingBalance { get; set; }
+
         // GrossAmount - FeedDeduction - MedicineDeduction - OtherDeductionsTotal + PreviousDue - AdvancePaid
         public decimal NetAmount { get; set; }
 

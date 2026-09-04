@@ -123,6 +123,9 @@
             <a class="sidebar-link @(IsActive("Farmer", "Collections") ? "active" : "")" asp-area="Farmer" asp-controller="Collections" asp-action="Index">
                 <i class="bi bi-droplet"></i><span>Milk Collection History</span>
             </a>
+            <a class="sidebar-link @(IsActive("Farmer", "Rates") ? "active" : "")" asp-area="Farmer" asp-controller="Rates" asp-action="Index">
+                <i class="bi bi-table"></i><span>Milk Rate Chart</span>
+            </a>
             <a class="sidebar-link @(IsActive("Farmer", "Settlements") ? "active" : "")" asp-area="Farmer" asp-controller="Settlements" asp-action="Index">
                 <i class="bi bi-receipt-cutoff"></i><span>Settlement & Payments</span>
             </a>

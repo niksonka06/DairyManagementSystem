@@ -100,6 +100,8 @@ namespace DairyManagementSystem.Services
                     OtherDeductionsTotal = p.OtherDeductionsTotal,
                     PreviousDue = p.PreviousDue,
                     AdvancePaid = p.AdvancePaid,
+                    OpeningBalance = p.OpeningBalance,
+                    ClosingBalance = p.ClosingBalance,
                     NetAmount = p.NetAmount,
                     Status = p.Status
                 })

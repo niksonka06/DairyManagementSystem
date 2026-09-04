@@ -25,9 +25,10 @@
     {
         <tr><th>@line.Type Deduction</th><td>−₹@line.Amount.ToString("0.00")</td></tr>
     }
-    <tr><th>Carry-forward</th><td>₹@Model.PreviousDue.ToString("0.00")</td></tr>
+    <tr><th>Opening balance</th><td>₹@Model.OpeningBalance.ToString("0.00")</td></tr>
     <tr><th>Advance Paid</th><td>−₹@Model.AdvancePaid.ToString("0.00")</td></tr>
     <tr class="table-active"><th>Net Amount</th><td><strong>₹@Model.NetAmount.ToString("0.00")</strong></td></tr>
+    <tr><th>Closing balance</th><td>₹@Model.ClosingBalance.ToString("0.00")</td></tr>
     @if (Model.PaidAt.HasValue)
     {
         <tr><th>Paid On</th><td>@Model.PaidAt.Value.ToString("dd-MMM-yyyy")</td></tr>

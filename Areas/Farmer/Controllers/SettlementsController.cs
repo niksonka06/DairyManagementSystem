@@ -90,6 +90,8 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
                 OtherDeductionsTotal = payment.OtherDeductionsTotal,
                 PreviousDue = payment.PreviousDue,
                 AdvancePaid = payment.AdvancePaid,
+                OpeningBalance = payment.OpeningBalance,
+                ClosingBalance = payment.ClosingBalance,
                 NetAmount = payment.NetAmount,
                 Status = payment.Status,
                 PaidAt = payment.PaidAt,

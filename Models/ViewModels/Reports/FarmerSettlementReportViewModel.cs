@@ -14,6 +14,8 @@ namespace DairyManagementSystem.Models.ViewModels.Reports
         public decimal OtherDeductionsTotal { get; set; }
         public decimal PreviousDue { get; set; }
         public decimal AdvancePaid { get; set; }
+        public decimal OpeningBalance { get; set; }
+        public decimal ClosingBalance { get; set; }
         public decimal NetAmount { get; set; }
         public SettlementStatus Status { get; set; }
     }
