@@ -19,8 +19,9 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             IFeedIssueService feedIssueService,
             IFeedInventoryService feedInventoryService,
             IFarmerService farmerService,
-            UserManager<ApplicationUser> userManager)
-            : base(userManager)
+            UserManager<ApplicationUser> userManager,
+            ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _feedIssueService = feedIssueService;
             _feedInventoryService = feedInventoryService;

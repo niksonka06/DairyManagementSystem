@@ -67,6 +67,15 @@
         }
         else if (User.IsInRole("Operator"))
         {
+            var operatorSocietyName = ViewContext.HttpContext.Items["OperatorSocietyName"] as string;
+            if (!string.IsNullOrEmpty(operatorSocietyName))
+            {
+                <div class="sidebar-society-badge" title="Your society">
+                    <i class="bi bi-building"></i>
+                    <span>@operatorSocietyName</span>
+                </div>
+            }
+
             <div class="sidebar-section-label">Overview</div>
             <a class="sidebar-link @(IsActive("Operator", "Home") ? "active" : "")" asp-area="Operator" asp-controller="Home" asp-action="Index">
                 <i class="bi bi-grid-1x2"></i><span>Society Dashboard</span>

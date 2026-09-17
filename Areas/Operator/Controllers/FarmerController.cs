@@ -14,8 +14,8 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
     {
         private readonly IFarmerService _farmerService;
 
-        public FarmerController(IFarmerService farmerService, UserManager<ApplicationUser> userManager)
-            : base(userManager)
+        public FarmerController(IFarmerService farmerService, UserManager<ApplicationUser> userManager, ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _farmerService = farmerService;
         }

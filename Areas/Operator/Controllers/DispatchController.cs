@@ -14,8 +14,8 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
     {
         private readonly IDispatchService _dispatchService;
 
-        public DispatchController(IDispatchService dispatchService, UserManager<ApplicationUser> userManager)
-            : base(userManager)
+        public DispatchController(IDispatchService dispatchService, UserManager<ApplicationUser> userManager, ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _dispatchService = dispatchService;
         }

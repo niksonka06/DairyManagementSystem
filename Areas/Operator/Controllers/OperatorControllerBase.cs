@@ -1,4 +1,5 @@
 using DairyManagementSystem.Areas.Operator.Filters;
+using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +14,12 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
     public abstract class OperatorControllerBase : Controller
     {
         protected UserManager<ApplicationUser> UserManager { get; }
+        protected ISocietyRepository SocietyRepository { get; }
 
-        protected OperatorControllerBase(UserManager<ApplicationUser> userManager)
+        protected OperatorControllerBase(UserManager<ApplicationUser> userManager, ISocietyRepository societyRepository)
         {
             UserManager = userManager;
+            SocietyRepository = societyRepository;
         }
 
         protected int CurrentUserId()
@@ -33,6 +36,14 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             return user.SocietyID
                 ?? throw new InvalidOperationException("This Operator account has no society assigned. Contact an Admin.");
+        }
+
+        protected async Task<string> CurrentOperatorSocietyNameAsync()
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            var society = await SocietyRepository.GetByIdAsync(societyId);
+            return society?.SocietyName
+                ?? throw new InvalidOperationException("Society not found. Contact an Admin.");
         }
     }
 }

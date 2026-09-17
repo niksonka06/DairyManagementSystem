@@ -14,8 +14,8 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
     {
         private readonly IFeedInventoryService _feedInventoryService;
 
-        public FeedInventoryController(IFeedInventoryService feedInventoryService, UserManager<ApplicationUser> userManager)
-            : base(userManager)
+        public FeedInventoryController(IFeedInventoryService feedInventoryService, UserManager<ApplicationUser> userManager, ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _feedInventoryService = feedInventoryService;
         }

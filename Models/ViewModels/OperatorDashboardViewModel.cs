@@ -3,6 +3,7 @@ namespace DairyManagementSystem.Models.ViewModels
     public class OperatorDashboardViewModel
     {
         public DateTime OverviewDate { get; set; } = DateTime.Today;
+        public string SocietyName { get; set; } = string.Empty;
         public decimal TodayMilkLitres { get; set; }
         public decimal TodayPayable { get; set; }
         public int ActiveFarmerCount { get; set; }

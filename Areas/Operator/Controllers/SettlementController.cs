@@ -20,8 +20,9 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             IPaymentService paymentService,
             IFarmerService farmerService,
             IAdvancePaymentService advancePaymentService,
-            UserManager<ApplicationUser> userManager)
-            : base(userManager)
+            UserManager<ApplicationUser> userManager,
+            ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _paymentService = paymentService;
             _farmerService = farmerService;

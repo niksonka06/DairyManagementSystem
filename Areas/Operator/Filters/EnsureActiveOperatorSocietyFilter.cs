@@ -50,6 +50,9 @@ namespace DairyManagementSystem.Areas.Operator.Filters
                 return;
             }
 
+            // Expose society name to all Operator views via ViewData (no extra DB round-trip)
+            context.HttpContext.Items["OperatorSocietyName"] = society.SocietyName;
+
             await next();
         }
     }

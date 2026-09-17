@@ -14,8 +14,8 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
         private readonly IAdvancePaymentService _advancePaymentService;
         private readonly IFarmerService _farmerService;
 
-        public AdvancePaymentController(IAdvancePaymentService advancePaymentService, IFarmerService farmerService, UserManager<ApplicationUser> userManager)
-            : base(userManager)
+        public AdvancePaymentController(IAdvancePaymentService advancePaymentService, IFarmerService farmerService, UserManager<ApplicationUser> userManager, ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _advancePaymentService = advancePaymentService;
             _farmerService = farmerService;

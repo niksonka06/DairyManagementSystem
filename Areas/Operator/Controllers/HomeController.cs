@@ -20,8 +20,9 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             IFarmerRepository farmerRepository,
             IMilkCollectionRepository collectionRepository,
             IPaymentRepository paymentRepository,
-            UserManager<ApplicationUser> userManager)
-            : base(userManager)
+            UserManager<ApplicationUser> userManager,
+            ISocietyRepository societyRepository)
+            : base(userManager, societyRepository)
         {
             _reportService = reportService;
             _farmerRepository = farmerRepository;
@@ -32,6 +33,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
         public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
+            var societyName = await CurrentOperatorSocietyNameAsync();
             var overviewDate = (date ?? DateTime.Today).Date;
 
             var daily = await _reportService.GetDailyCollectionReportAsync(societyId, overviewDate, ct);
@@ -53,6 +55,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             var model = new OperatorDashboardViewModel
             {
                 OverviewDate = overviewDate,
+                SocietyName = societyName,
                 TodayMilkLitres = daily.TotalQuantity,
                 TodayPayable = daily.TotalAmount,
                 ActiveFarmerCount = farmers.Count(f => f.IsActive),
