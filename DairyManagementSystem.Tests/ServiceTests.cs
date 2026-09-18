@@ -149,6 +149,27 @@ namespace DairyManagementSystem.Tests
         }
 
         [Fact]
+        public async Task Create_evening_allowed_when_morning_is_closed()
+        {
+            var (svc, _, shifts) = Create();
+            shifts.Closed.Add((1, DateTime.Today, Shift.Morning));
+            var form = Form();
+            form.Shift = Shift.Evening;
+            var created = await svc.CreateAsync(form, 9);
+            Assert.Equal(Shift.Evening, created.Shift);
+        }
+
+        [Theory]
+        [InlineData(Shift.Morning, true, false, Shift.Evening)]
+        [InlineData(Shift.Evening, false, true, Shift.Morning)]
+        [InlineData(Shift.Evening, true, false, Shift.Evening)]
+        [InlineData(Shift.Morning, true, true, Shift.Morning)]
+        public void Form_defaults_to_the_open_shift(Shift requested, bool morningClosed, bool eveningClosed, Shift expected)
+        {
+            Assert.Equal(expected, MilkCollectionPageViewModel.PreferOpenFormShift(requested, morningClosed, eveningClosed));
+        }
+
+        [Fact]
         public async Task Farmer_cannot_load_another_farmers_collection()
         {
             var (svc, store, _) = Create();

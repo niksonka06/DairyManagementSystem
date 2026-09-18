@@ -104,7 +104,7 @@
                             </div>
                             <div class="col-6 mb-2">
                                 <label asp-for="Form.Shift" class="form-label"></label>
-                                <select asp-for="Form.Shift" class="form-select form-select-sm">
+                                <select asp-for="Form.Shift" class="form-select form-select-sm js-collection-shift">
                                     <option value="Morning">Morning</option>
                                     <option value="Evening">Evening</option>
                                 </select>
@@ -151,14 +151,20 @@
                         @{
                             var selectedShiftClosed = Model.Form.Shift == DairyManagementSystem.Models.Enums.Shift.Evening ? Model.EveningClosed : Model.MorningClosed;
                         }
-                        @if (selectedShiftClosed)
-                        {
-                            <div class="alert alert-warning py-2">This shift is closed. Reopen it to record more collections.</div>
-                        }
-                        else
-                        {
-                            <button type="submit" class="btn btn-primary milk-collect-submit">Record Collection</button>
-                        }
+                        <div class="js-shift-gate"
+                             data-morning-closed="@(Model.MorningClosed ? "true" : "false")"
+                             data-evening-closed="@(Model.EveningClosed ? "true" : "false")">
+                            @if (selectedShiftClosed)
+                            {
+                                <div class="alert alert-warning py-2 js-shift-closed-msg">This shift is closed. Reopen it to record more collections.</div>
+                                <button type="submit" class="btn btn-primary milk-collect-submit js-shift-submit" hidden>Record Collection</button>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning py-2 js-shift-closed-msg" hidden>This shift is closed. Reopen it to record more collections.</div>
+                                <button type="submit" class="btn btn-primary milk-collect-submit js-shift-submit">Record Collection</button>
+                            }
+                        </div>
                     </form>
                 </div>
             </div>
@@ -232,4 +238,34 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var select = document.querySelector('.js-collection-shift');
+            var gate = document.querySelector('.js-shift-gate');
+            if (!select || !gate) {
+                return;
+            }
+
+            var msg = gate.querySelector('.js-shift-closed-msg');
+            var submit = gate.querySelector('.js-shift-submit');
+
+            function isClosed(shift) {
+                var key = shift === 'Evening' ? 'eveningClosed' : 'morningClosed';
+                return gate.dataset[key] === 'true';
+            }
+
+            function sync() {
+                var closed = isClosed(select.value);
+                if (msg) {
+                    msg.hidden = !closed;
+                }
+                if (submit) {
+                    submit.hidden = closed;
+                }
+            }
+
+            select.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
 }

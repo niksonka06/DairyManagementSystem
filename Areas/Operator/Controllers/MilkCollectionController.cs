@@ -38,7 +38,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 Shift = shift ?? Shift.Morning
             };
 
-            return View(await BuildPageAsync(day, form, sort, dir, page, ct));
+            return View(await BuildPageAsync(day, form, sort, dir, page, ct, preferOpenFormShift: true));
         }
 
         [HttpGet]
@@ -56,7 +56,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 
             if (!ModelState.IsValid)
             {
-                return View(nameof(Index), await BuildPageAsync(day, model, null, null, 1, ct));
+                return View(nameof(Index), await BuildPageAsync(day, model, null, null, 1, ct, preferOpenFormShift: false));
             }
 
             try
@@ -70,7 +70,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             catch (BusinessRuleException ex)
             {
                 ModelState.AddModelError(string.Empty, ex.Message);
-                return View(nameof(Index), await BuildPageAsync(day, model, null, null, 1, ct));
+                return View(nameof(Index), await BuildPageAsync(day, model, null, null, 1, ct, preferOpenFormShift: false));
             }
         }
 
@@ -173,7 +173,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 TempData["Error"] = ex.Message;
             }
 
-            return RedirectToAction(nameof(Index), new { date = date.Date, shift });
+            return RedirectToAction(nameof(Index), new { date = date.Date });
         }
 
         [HttpPost]
@@ -191,7 +191,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 TempData["Error"] = ex.Message;
             }
 
-            return RedirectToAction(nameof(Index), new { date = date.Date, shift });
+            return RedirectToAction(nameof(Index), new { date = date.Date });
         }
 
         private async Task<MilkCollectionPageViewModel> BuildPageAsync(
@@ -200,7 +200,8 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             string? sort,
             string? dir,
             int page,
-            CancellationToken ct)
+            CancellationToken ct,
+            bool preferOpenFormShift)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
             var collections = await _collectionService.GetBySocietyAndDateAsync(societyId, day, ct);
@@ -226,16 +227,19 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             form.CollectionDate = form.CollectionDate == default ? day : form.CollectionDate.Date;
             form.AvailableFarmers = await AvailableFarmersAsync(ct);
 
-            var dateValue = day.ToString("yyyy-MM-dd");
-            var extra = new Dictionary<string, string?> { ["date"] = dateValue };
-            if (form.Shift != default)
-            {
-                extra["shift"] = form.Shift.ToString();
-            }
-
             var accepted = items.Where(v => !v.IsRejected).ToList();
             var morningClosed = await _shiftCloseService.IsClosedAsync(societyId, day, Shift.Morning, ct);
             var eveningClosed = await _shiftCloseService.IsClosedAsync(societyId, day, Shift.Evening, ct);
+            if (preferOpenFormShift)
+            {
+                form.Shift = MilkCollectionPageViewModel.PreferOpenFormShift(form.Shift, morningClosed, eveningClosed);
+            }
+
+            var extra = new Dictionary<string, string?> { ["date"] = day.ToString("yyyy-MM-dd") };
+            if (form.Shift != Shift.Morning)
+            {
+                extra["shift"] = form.Shift.ToString();
+            }
 
             return new MilkCollectionPageViewModel
             {
