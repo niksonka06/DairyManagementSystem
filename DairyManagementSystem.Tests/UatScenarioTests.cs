@@ -23,6 +23,22 @@ namespace DairyManagementSystem.Tests
         }
 
         [Fact]
+        public void UAT_generated_settlement_can_include_later_unlocked_collections()
+        {
+            var alreadySettled = SettlementCalculator.ComputeCollectionAmount(10m, 40m);
+            var laterPour = SettlementCalculator.ComputeCollectionAmount(5m, 40m);
+            var totals = SettlementCalculator.Compute(
+                gross: alreadySettled + laterPour,
+                feedDeduction: 0,
+                medicineDeduction: 0,
+                otherDeductionsTotal: 0,
+                previousDue: 0,
+                advancePaid: 0);
+
+            Assert.Equal(600m, totals.NetAmount);
+        }
+
+        [Fact]
         public void UAT_negative_net_becomes_next_week_opening_balance()
         {
             var thisWeek = SettlementCalculator.Compute(400, 600, 0, 0, previousDue: 0, advancePaid: 0);

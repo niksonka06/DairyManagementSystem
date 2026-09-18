@@ -27,6 +27,7 @@
             <sort-th column="item" title="Item" list="Model"></sort-th>
             <sort-th column="qty" title="Quantity" list="Model"></sort-th>
             <sort-th column="cost" title="Total Cost" list="Model"></sort-th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -39,11 +40,19 @@
                 <td>@i.FeedName</td>
                 <td>@i.Quantity.ToString("0.00")</td>
                 <td>₹@i.TotalCost.ToString("0.00")</td>
+                <td>
+                    @if (!i.IsLocked)
+                    {
+                        <form asp-action="Void" asp-route-id="@i.IssueID" method="post" class="d-inline" onsubmit="return confirm('Void this issue and restore stock?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Void</button>
+                        </form>
+                    }
+                </td>
             </tr>
         }
         @if (!Model.Items.Any())
         {
-            <tr><td colspan="6" class="text-center text-muted">No issues recorded yet.</td></tr>
+            <tr><td colspan="7" class="text-center text-muted">No issues recorded yet.</td></tr>
         }
     </tbody>
 </table>

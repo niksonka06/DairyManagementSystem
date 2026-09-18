@@ -1,0 +1,103 @@
+flowchart TD
+
+subgraph group_entry["Application"]
+  node_startup{{"Startup &amp; DI<br/>ASP.NET Core host<br/>[Program.cs]"}}
+  node_auth["Accounts &amp; recovery<br/>MVC controller"]
+end
+
+subgraph group_access["Role Workflows"]
+  node_admin["Admin management<br/>MVC area"]
+  node_operator_guard["Operator society guard<br/>action filter"]
+  node_operator["Operator workflows<br/>MVC area"]
+  node_farmer_portal["Farmer portal<br/>MVC area"]
+end
+
+subgraph group_operations["Operational Services"]
+  node_collection["Collection &amp; pricing<br/>service layer"]
+  node_rates["Milk rate rules<br/>[MilkRateService.cs]"]
+  node_feed_advances["Feed &amp; advances<br/>service layer"]
+  node_dispatch["Milk dispatch<br/>[DispatchService.cs]"]
+  node_settlements["Payments &amp; settlements<br/>service layer<br/>[PaymentService.cs]"]
+end
+
+subgraph group_data["Domain &amp; Persistence"]
+  node_domain["Cooperative domain<br/>EF entities<br/>[Society.cs]"]
+  node_repositories["Repositories<br/>data access<br/>[RepositoryBase.cs]"]
+  node_uow["Unit of Work<br/>transaction boundary<br/>[UnitOfWork.cs]"]
+  node_database[("Application database<br/>EF Core database")]
+  node_rules_error["Business rule failures<br/>exception boundary"]
+end
+
+subgraph group_outputs["Administration &amp; Outputs"]
+  node_society_users["Society &amp; user admin<br/>service layer<br/>[SocietyService.cs]"]
+  node_audit["Audit trail<br/>service/repository<br/>[AuditService.cs]"]
+  node_reporting["Reports<br/>[ReportService.cs]"]
+  node_pdf["PDF outputs<br/>document generator<br/>[SettlementPdf.cs]"]
+  node_notifications["Email &amp; SMS<br/>integration services<br/>[EmailService.cs]"]
+end
+
+node_startup -->|"hosts"| node_auth
+node_startup -->|"routes"| node_admin
+node_startup -->|"routes"| node_operator
+node_startup -->|"routes"| node_farmer_portal
+node_operator_guard -->|"protects"| node_operator
+node_operator -->|"records collections"| node_collection
+node_operator -->|"manages rates"| node_rates
+node_operator -->|"records balances"| node_feed_advances
+node_operator -->|"records dispatch"| node_dispatch
+node_operator -->|"creates settlements"| node_settlements
+node_farmer_portal -->|"views history"| node_collection
+node_farmer_portal -->|"views statements"| node_settlements
+node_admin -->|"administers"| node_society_users
+node_admin -->|"views"| node_audit
+node_admin -->|"unlocks"| node_settlements
+node_collection -->|"evaluates"| node_rates
+node_collection -->|"persists through"| node_uow
+node_feed_advances -->|"persists through"| node_uow
+node_dispatch -->|"persists through"| node_uow
+node_settlements -->|"persists through"| node_uow
+node_society_users -->|"persists through"| node_uow
+node_audit -->|"writes through"| node_uow
+node_uow -->|"coordinates"| node_repositories
+node_repositories -->|"EF access"| node_database
+node_database -->|"stores"| node_domain
+node_settlements -->|"generates"| node_pdf
+node_reporting -->|"generates"| node_pdf
+node_auth -->|"uses"| node_notifications
+node_reporting -->|"aggregates"| node_repositories
+node_collection -.->|"raises"| node_rules_error
+
+click node_startup "https://github.com/niksonka06/dairymanagementsystem/blob/master/Program.cs"
+click node_auth "https://github.com/niksonka06/dairymanagementsystem/blob/master/Controllers/AccountController.cs"
+click node_admin "https://github.com/niksonka06/dairymanagementsystem/blob/master/Areas/Admin/Controllers/SocietyController.cs"
+click node_operator_guard "https://github.com/niksonka06/dairymanagementsystem/blob/master/Areas/Operator/Filters/EnsureActiveOperatorSocietyFilter.cs"
+click node_operator "https://github.com/niksonka06/dairymanagementsystem/blob/master/Areas/Operator/Controllers/OperatorControllerBase.cs"
+click node_farmer_portal "https://github.com/niksonka06/dairymanagementsystem/blob/master/Areas/Farmer/Controllers/CollectionsController.cs"
+click node_collection "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/MilkCollectionService.cs"
+click node_rates "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/MilkRateService.cs"
+click node_feed_advances "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/FeedIssueService.cs"
+click node_dispatch "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/DispatchService.cs"
+click node_settlements "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/PaymentService.cs"
+click node_society_users "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/SocietyService.cs"
+click node_audit "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/AuditService.cs"
+click node_reporting "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/ReportService.cs"
+click node_pdf "https://github.com/niksonka06/dairymanagementsystem/blob/master/Helpers/SettlementPdf.cs"
+click node_notifications "https://github.com/niksonka06/dairymanagementsystem/blob/master/Services/EmailService.cs"
+click node_domain "https://github.com/niksonka06/dairymanagementsystem/blob/master/Models/Entities/Society.cs"
+click node_repositories "https://github.com/niksonka06/dairymanagementsystem/blob/master/Repositories/RepositoryBase.cs"
+click node_uow "https://github.com/niksonka06/dairymanagementsystem/blob/master/Repositories/UnitOfWork.cs"
+click node_database "https://github.com/niksonka06/dairymanagementsystem/blob/master/Data/ApplicationDbContext.cs"
+click node_rules_error "https://github.com/niksonka06/dairymanagementsystem/blob/master/Helpers/BusinessRuleException.cs"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_startup,node_auth toneBlue
+class node_admin,node_operator_guard,node_operator,node_farmer_portal toneAmber
+class node_collection,node_rates,node_feed_advances,node_dispatch,node_settlements toneMint
+class node_domain,node_repositories,node_uow,node_database,node_rules_error toneRose
+class node_society_users,node_audit,node_reporting,node_pdf,node_notifications toneIndigo

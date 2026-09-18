@@ -62,7 +62,7 @@ namespace DairyManagementSystem.Services
             _auditService.Log(nameof(MilkRate), rate.RateID, AuditAction.Created,
                 oldValue: null,
                 newValue: RateSnapshot(rate),
-                performedByUserId);
+                performedByUserId, rate.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
 
@@ -110,7 +110,7 @@ namespace DairyManagementSystem.Services
 
             _auditService.Log(nameof(MilkRate), rate.RateID, AuditAction.Updated, oldSnapshot,
                 RateSnapshot(rate),
-                performedByUserId);
+                performedByUserId, rate.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
         }
@@ -136,7 +136,7 @@ namespace DairyManagementSystem.Services
                 isActive ? AuditAction.Activated : AuditAction.Deactivated,
                 oldValue: new { IsActive = !isActive },
                 newValue: new { IsActive = isActive },
-                performedByUserId);
+                performedByUserId, rate.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
         }

@@ -13,9 +13,16 @@ namespace DairyManagementSystem.Repositories
 
         public async Task<(List<AuditLog> Items, int TotalCount)> GetPagedAsync(
             string? entityType, int? entityId, int? performedBy, DateTime? fromDate, DateTime? toDate,
-            int page, int pageSize, CancellationToken ct = default)
+            int page, int pageSize, int? societyId = null, CancellationToken ct = default)
         {
             var query = DbSet.AsNoTracking().Include(a => a.PerformedByUser).AsQueryable();
+
+            if (societyId.HasValue)
+            {
+                query = query.Where(a =>
+                    a.SocietyID == societyId.Value
+                    || (a.SocietyID == null && a.PerformedByUser != null && a.PerformedByUser.SocietyID == societyId.Value));
+            }
 
             if (!string.IsNullOrWhiteSpace(entityType))
             {

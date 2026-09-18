@@ -178,7 +178,7 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             try
             {
                 await _paymentService.RecalculateAsync(id, societyId, CurrentUserId(), rowVersion, ct);
-                TempData["Success"] = "Amounts recalculated from current unlocked records.";
+                TempData["Success"] = "Settlement amounts refreshed from current records.";
             }
             catch (BusinessRuleException ex)
             {

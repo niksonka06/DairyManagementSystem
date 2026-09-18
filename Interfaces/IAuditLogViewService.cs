@@ -11,6 +11,6 @@ namespace DairyManagementSystem.Interfaces
     {
         Task<(List<AuditLog> Items, int TotalCount)> SearchAsync(
             string? entityType, int? entityId, int? performedBy, DateTime? fromDate, DateTime? toDate,
-            int page, int pageSize, CancellationToken ct = default);
+            int page, int pageSize, int? societyId = null, CancellationToken ct = default);
     }
 }

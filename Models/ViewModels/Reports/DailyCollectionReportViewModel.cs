@@ -6,6 +6,7 @@ namespace DairyManagementSystem.Models.ViewModels.Reports
 
         public decimal TotalQuantity { get; set; }
         public decimal TotalAmount { get; set; }
+        public decimal RejectedQuantity { get; set; }
         public int FarmerCount { get; set; }
         public decimal AverageFatPercent { get; set; }
 

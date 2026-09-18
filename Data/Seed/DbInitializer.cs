@@ -89,21 +89,6 @@ namespace DairyManagementSystem.Data.Seed
 
             foreach (var societyId in societyIds)
             {
-                var placeholders = await db.MilkRates
-                    .Where(r => r.SocietyID == societyId
-                                && r.IsActive
-                                && r.SnfPercentFrom == 7.5m
-                                && r.SnfPercentTo == 11.0m
-                                && r.ClrFrom == 0m
-                                && r.ClrTo == 50m)
-                    .ToListAsync();
-
-                foreach (var placeholder in placeholders)
-                {
-                    placeholder.IsActive = false;
-                    changed = true;
-                }
-
                 var alreadySeeded = await db.MilkRates.AnyAsync(r =>
                     r.SocietyID == societyId && r.EffectiveFrom == SeedChartEffectiveFrom);
 

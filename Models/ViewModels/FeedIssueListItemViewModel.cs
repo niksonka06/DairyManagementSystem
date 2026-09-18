@@ -12,5 +12,6 @@ namespace DairyManagementSystem.Models.ViewModels
         public decimal Quantity { get; set; }
         public decimal TotalCost { get; set; }
         public DateTime IssueDate { get; set; }
+        public bool IsLocked { get; set; }
     }
 }

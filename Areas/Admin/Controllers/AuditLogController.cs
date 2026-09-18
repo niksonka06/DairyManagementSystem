@@ -18,7 +18,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         // new auditable entity is added.
         private static readonly string[] EntityTypes =
         {
-            "Society", "Farmer", "ApplicationUser", "MilkRate", "MilkCollection",
+            "Society", "Farmer", "ApplicationUser", "MilkRate", "MilkCollection", "ShiftClose",
             "FeedInventory", "FeedIssue", "Payment", "AdvancePayment", "Dispatch"
         };
 
@@ -31,7 +31,7 @@ namespace DairyManagementSystem.Areas.Admin.Controllers
         {
             var (items, totalCount) = await _auditLogViewService.SearchAsync(
                 model.EntityType, model.EntityID, performedBy: null, model.FromDate, model.ToDate,
-                model.Page, model.PageSize, ct);
+                model.Page, model.PageSize, societyId: null, ct);
 
             model.Items = items.Select(a => new AuditLogListItemViewModel
             {

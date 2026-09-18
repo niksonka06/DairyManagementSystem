@@ -45,6 +45,8 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
 
             var todayCollections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, overviewDate, overviewDate, ct);
             var monthCollections = await _collectionService.GetByFarmerAndDateRangeAsync(farmer.FarmerID, monthStart, overviewDate, ct);
+            var acceptedToday = todayCollections.Where(c => !c.IsRejected).ToList();
+            var acceptedMonth = monthCollections.Where(c => !c.IsRejected).ToList();
             var settlements = await _paymentService.GetByFarmerAsync(farmer.FarmerID, ct);
             var latestSettlement = settlements.FirstOrDefault(p => p.Status != SettlementStatus.Draft);
 
@@ -56,10 +58,10 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
                 OverviewDate = overviewDate,
                 FarmerCode = farmer.FarmerCode,
                 FullName = farmer.FullName,
-                TodayQuantity = todayCollections.Sum(c => c.Quantity),
-                TodayAmount = todayCollections.Sum(c => c.Amount),
-                MonthlyQuantity = monthCollections.Sum(c => c.Quantity),
-                MonthlyAverageFat = monthCollections.Count > 0 ? monthCollections.Average(c => c.FatPercent) : 0,
+                TodayQuantity = acceptedToday.Sum(c => c.Quantity),
+                TodayAmount = acceptedToday.Sum(c => c.Amount),
+                MonthlyQuantity = acceptedMonth.Sum(c => c.Quantity),
+                MonthlyAverageFat = acceptedMonth.Count > 0 ? acceptedMonth.Average(c => c.FatPercent) : 0,
                 HasLatestSettlement = latestSettlement is not null,
                 LatestSettlementPeriodStart = latestSettlement?.PeriodStart ?? default,
                 LatestSettlementPeriodEnd = latestSettlement?.PeriodEnd ?? default,

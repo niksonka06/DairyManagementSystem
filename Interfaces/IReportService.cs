@@ -11,5 +11,6 @@ namespace DairyManagementSystem.Interfaces
         Task<DispatchReportViewModel> GetDispatchReportAsync(int societyId, DateTime fromDate, DateTime toDate, CancellationToken ct = default);
         Task<FatAnalysisReportViewModel> GetFatAnalysisReportAsync(int societyId, DateTime fromDate, DateTime toDate, CancellationToken ct = default);
         Task<TopSuppliersReportViewModel> GetTopSuppliersReportAsync(int societyId, DateTime fromDate, DateTime toDate, CancellationToken ct = default);
+        Task<DailyReconciliationReportViewModel> GetDailyReconciliationReportAsync(int societyId, DateTime fromDate, DateTime toDate, CancellationToken ct = default);
     }
 }

@@ -37,17 +37,20 @@ namespace DairyManagementSystem.Services
         {
             var day = date.Date;
             var collections = await _collectionRepository.GetBySocietyAndDateRangeAsync(societyId, day, day, ct);
+            var accepted = collections.Where(c => !c.IsRejected).ToList();
+            var rejected = collections.Where(c => c.IsRejected).ToList();
 
-            var morning = collections.Where(c => c.Shift == Shift.Morning).ToList();
-            var evening = collections.Where(c => c.Shift == Shift.Evening).ToList();
+            var morning = accepted.Where(c => c.Shift == Shift.Morning).ToList();
+            var evening = accepted.Where(c => c.Shift == Shift.Evening).ToList();
 
             return new DailyCollectionReportViewModel
             {
                 ReportDate = day,
-                TotalQuantity = collections.Sum(c => c.Quantity),
-                TotalAmount = collections.Sum(c => c.Amount),
-                FarmerCount = collections.Select(c => c.FarmerID).Distinct().Count(),
-                AverageFatPercent = collections.Count > 0 ? collections.Average(c => c.FatPercent) : 0,
+                TotalQuantity = accepted.Sum(c => c.Quantity),
+                TotalAmount = accepted.Sum(c => c.Amount),
+                RejectedQuantity = rejected.Sum(c => c.Quantity),
+                FarmerCount = accepted.Select(c => c.FarmerID).Distinct().Count(),
+                AverageFatPercent = accepted.Count > 0 ? accepted.Average(c => c.FatPercent) : 0,
                 MorningQuantity = morning.Sum(c => c.Quantity),
                 MorningAmount = morning.Sum(c => c.Amount),
                 EveningQuantity = evening.Sum(c => c.Quantity),
@@ -58,7 +61,9 @@ namespace DairyManagementSystem.Services
         public async Task<WeeklyCollectionSummaryViewModel> GetWeeklyCollectionSummaryAsync(int societyId, DateTime weekReferenceDate, CancellationToken ct = default)
         {
             var (start, end) = DateHelpers.ComputeWeek(weekReferenceDate);
-            var collections = await _collectionRepository.GetBySocietyAndDateRangeAsync(societyId, start, end, ct);
+            var collections = (await _collectionRepository.GetBySocietyAndDateRangeAsync(societyId, start, end, ct))
+                .Where(c => !c.IsRejected)
+                .ToList();
 
             var rows = collections
                 .GroupBy(c => new { c.FarmerID, FarmerCode = c.Farmer?.FarmerCode ?? "", FarmerName = c.Farmer?.FullName ?? "" })
@@ -179,6 +184,7 @@ namespace DairyManagementSystem.Services
                 TotalDispatched = d.TotalDispatched,
                 Variance = d.Variance,
                 VariancePercent = d.VariancePercent,
+                VarianceReason = d.VarianceReason,
                 OperatorName = d.RecordedByUser?.FullName ?? ""
             }).ToList();
 
@@ -237,7 +243,9 @@ namespace DairyManagementSystem.Services
 
         public async Task<TopSuppliersReportViewModel> GetTopSuppliersReportAsync(int societyId, DateTime fromDate, DateTime toDate, CancellationToken ct = default)
         {
-            var collections = await _collectionRepository.GetBySocietyAndDateRangeAsync(societyId, fromDate, toDate, ct);
+            var collections = (await _collectionRepository.GetBySocietyAndDateRangeAsync(societyId, fromDate, toDate, ct))
+                .Where(c => !c.IsRejected)
+                .ToList();
 
             var byFarmer = collections
                 .GroupBy(c => new { c.FarmerID, FarmerCode = c.Farmer?.FarmerCode ?? "", FarmerName = c.Farmer?.FullName ?? "" })
@@ -258,6 +266,50 @@ namespace DairyManagementSystem.Services
                     .Select(f => new SupplierRow { FarmerCode = f.FarmerCode, FarmerName = f.FarmerName, Value = f.TotalQuantity }).ToList(),
                 TopByIncome = byFarmer.OrderByDescending(f => f.TotalAmount).Take(10)
                     .Select(f => new SupplierRow { FarmerCode = f.FarmerCode, FarmerName = f.FarmerName, Value = f.TotalAmount }).ToList()
+            };
+        }
+
+        public async Task<DailyReconciliationReportViewModel> GetDailyReconciliationReportAsync(int societyId, DateTime fromDate, DateTime toDate, CancellationToken ct = default)
+        {
+            var from = fromDate.Date;
+            var to = toDate.Date;
+            var collections = (await _collectionRepository.GetBySocietyAndDateRangeAsync(societyId, from, to, ct))
+                .Where(c => !c.IsRejected)
+                .ToList();
+            var dispatches = await _dispatchRepository.GetBySocietyAndDateRangeAsync(societyId, from, to, ct);
+
+            var collectedByDay = collections
+                .GroupBy(c => c.CollectionDate)
+                .ToDictionary(g => g.Key, g => g.Sum(c => c.Quantity));
+            var dispatchByDay = dispatches.ToDictionary(d => d.DispatchDate, d => d);
+
+            var dates = collectedByDay.Keys.Union(dispatchByDay.Keys).OrderBy(d => d).ToList();
+            var rows = dates.Select(day =>
+            {
+                collectedByDay.TryGetValue(day, out var collected);
+                dispatchByDay.TryGetValue(day, out var dispatch);
+                var dispatched = dispatch?.TotalDispatched ?? 0m;
+                var collectedSnap = dispatch?.TotalCollected ?? collected;
+                var variance = collectedSnap - dispatched;
+                return new DailyReconciliationRow
+                {
+                    Date = day,
+                    TotalCollected = collectedSnap,
+                    TotalDispatched = dispatched,
+                    Variance = variance,
+                    VariancePercent = DispatchVariance.Percent(collectedSnap, dispatched),
+                    VarianceReason = dispatch?.VarianceReason,
+                    VehicleNo = dispatch?.VehicleNo,
+                    Destination = dispatch?.Destination,
+                    HasDispatch = dispatch is not null
+                };
+            }).ToList();
+
+            return new DailyReconciliationReportViewModel
+            {
+                FromDate = from,
+                ToDate = to,
+                Rows = rows
             };
         }
     }

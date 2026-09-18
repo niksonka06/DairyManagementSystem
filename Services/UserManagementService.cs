@@ -143,8 +143,8 @@ namespace DairyManagementSystem.Services
 
         public async Task SetActiveStatusAsync(int userId, bool isActive, int performedByUserId, CancellationToken ct = default)
         {
-            var user = await _userManager.FindByIdAsync(userId.ToString())
-                ?? throw new BusinessRuleException("User not found.");
+            var user = await GetOperatorByIdAsync(userId, ct)
+                ?? throw new BusinessRuleException("Operator not found.");
 
             if (user.IsActive == isActive)
             {

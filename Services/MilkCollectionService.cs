@@ -3,6 +3,7 @@ using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
 using DairyManagementSystem.Models.ViewModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Services
 {
@@ -11,6 +12,7 @@ namespace DairyManagementSystem.Services
         private readonly IMilkCollectionRepository _collectionRepository;
         private readonly IFarmerRepository _farmerRepository;
         private readonly IMilkRateService _milkRateService;
+        private readonly IShiftCloseService _shiftCloseService;
         private readonly IAuditService _auditService;
         private readonly IUnitOfWork _unitOfWork;
 
@@ -18,12 +20,14 @@ namespace DairyManagementSystem.Services
             IMilkCollectionRepository collectionRepository,
             IFarmerRepository farmerRepository,
             IMilkRateService milkRateService,
+            IShiftCloseService shiftCloseService,
             IAuditService auditService,
             IUnitOfWork unitOfWork)
         {
             _collectionRepository = collectionRepository;
             _farmerRepository = farmerRepository;
             _milkRateService = milkRateService;
+            _shiftCloseService = shiftCloseService;
             _auditService = auditService;
             _unitOfWork = unitOfWork;
         }
@@ -85,18 +89,15 @@ namespace DairyManagementSystem.Services
                     "Edit the existing entry instead of creating a new one.");
             }
 
+            await EnsureShiftOpenAsync(model.SocietyID, collectionDate, model.Shift, ct);
+
             var quantity = model.Quantity!.Value;
             var fatPercent = model.FatPercent!.Value;
             var snf = model.SNF!.Value;
             var clr = model.CLR!.Value;
 
-            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, fatPercent, snf, clr, collectionDate, ct);
-            if (applicableRate is null)
-            {
-                throw new BusinessRuleException(
-                    $"No applicable rate found for {fatPercent}% fat, {snf} SNF, {clr} CLR on {collectionDate:dd-MMM-yyyy}. " +
-                    "Add a matching fat/SNF/CLR band on the Milk Rate Chart.");
-            }
+            var (rate, amount, isRejected, rejectionReason) = await ResolvePaymentAsync(
+                model, collectionDate, quantity, fatPercent, snf, clr, ct);
 
             var collection = new MilkCollection
             {
@@ -108,20 +109,32 @@ namespace DairyManagementSystem.Services
                 FatPercent = fatPercent,
                 SNF = snf,
                 CLR = clr,
-                RatePerLitre = applicableRate.RatePerLitre, // snapshot — see class comment on MilkCollection
-                Amount = SettlementCalculator.ComputeCollectionAmount(quantity, applicableRate.RatePerLitre),
+                RatePerLitre = rate,
+                Amount = amount,
+                IsRejected = isRejected,
+                RejectionReason = rejectionReason,
                 RecordedBy = performedByUserId,
                 CreatedAt = DateTime.UtcNow,
                 IsLocked = false
             };
 
             _collectionRepository.Add(collection);
-            await _unitOfWork.SaveChangesAsync(ct); // collection.CollectionID now populated
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                throw new BusinessRuleException(
+                    $"A {model.Shift} collection for this farmer on {collectionDate:dd-MMM-yyyy} already exists. " +
+                    "Edit the existing entry instead of creating a new one.");
+            }
 
             _auditService.Log(nameof(MilkCollection), collection.CollectionID, AuditAction.Created,
                 oldValue: null,
-                newValue: new { collection.FarmerID, collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount },
-                performedByUserId);
+                newValue: new { collection.FarmerID, collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount, collection.IsRejected, collection.RejectionReason },
+                performedByUserId,
+                collection.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
 
@@ -141,6 +154,8 @@ namespace DairyManagementSystem.Services
                 throw new BusinessRuleException(
                     "This collection is locked because it's part of a generated settlement and cannot be edited. Contact an Admin to unlock it if a correction is truly needed.");
             }
+
+            await EnsureShiftOpenAsync(model.SocietyID, collection.CollectionDate, collection.Shift, ct);
 
             var farmer = await _farmerRepository.GetByIdAsync(collection.FarmerID, ct);
             if (farmer is null || !farmer.IsActive)
@@ -165,21 +180,17 @@ namespace DairyManagementSystem.Services
                     $"A {model.Shift} collection for this farmer on {collectionDate:dd-MMM-yyyy} already exists.");
             }
 
-            // Quality (and possibly date) may have changed via this correction —
-            // re-resolve the rate rather than keeping the original.
+            await EnsureShiftOpenAsync(model.SocietyID, collectionDate, model.Shift, ct);
+
             var quantity = model.Quantity!.Value;
             var fatPercent = model.FatPercent!.Value;
             var snf = model.SNF!.Value;
             var clr = model.CLR!.Value;
 
-            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, fatPercent, snf, clr, collectionDate, ct);
-            if (applicableRate is null)
-            {
-                throw new BusinessRuleException(
-                    $"No applicable rate found for {fatPercent}% fat, {snf} SNF, {clr} CLR on {collectionDate:dd-MMM-yyyy}.");
-            }
+            var (rate, amount, isRejected, rejectionReason) = await ResolvePaymentAsync(
+                model, collectionDate, quantity, fatPercent, snf, clr, ct);
 
-            var oldSnapshot = new { collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount };
+            var oldSnapshot = new { collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount, collection.IsRejected, collection.RejectionReason };
 
             collection.CollectionDate = collectionDate;
             collection.Shift = model.Shift;
@@ -187,16 +198,71 @@ namespace DairyManagementSystem.Services
             collection.FatPercent = fatPercent;
             collection.SNF = snf;
             collection.CLR = clr;
-            collection.RatePerLitre = applicableRate.RatePerLitre;
-            collection.Amount = SettlementCalculator.ComputeCollectionAmount(quantity, applicableRate.RatePerLitre);
+            collection.RatePerLitre = rate;
+            collection.Amount = amount;
+            collection.IsRejected = isRejected;
+            collection.RejectionReason = rejectionReason;
 
             _collectionRepository.SetOriginalRowVersion(collection, model.RowVersion!);
 
             _auditService.Log(nameof(MilkCollection), collection.CollectionID, AuditAction.Updated, oldSnapshot,
-                new { collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount },
-                performedByUserId);
+                new { collection.CollectionDate, collection.Shift, collection.Quantity, collection.FatPercent, collection.RatePerLitre, collection.Amount, collection.IsRejected, collection.RejectionReason },
+                performedByUserId,
+                collection.SocietyID);
 
-            await _unitOfWork.SaveChangesAsync(ct);
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                throw new BusinessRuleException(
+                    $"A {model.Shift} collection for this farmer on {collectionDate:dd-MMM-yyyy} already exists.");
+            }
+        }
+
+        public async Task EnsureShiftOpenAsync(int societyId, DateTime date, Shift shift, CancellationToken ct = default)
+        {
+            if (await _shiftCloseService.IsClosedAsync(societyId, date, shift, ct))
+            {
+                throw new BusinessRuleException(
+                    $"The {shift} shift on {date:dd-MMM-yyyy} is closed. Reopen it before recording or editing collections.");
+            }
+        }
+
+        private async Task<(decimal Rate, decimal Amount, bool IsRejected, string? Reason)> ResolvePaymentAsync(
+            MilkCollectionFormViewModel model,
+            DateTime collectionDate,
+            decimal quantity,
+            decimal fatPercent,
+            decimal snf,
+            decimal clr,
+            CancellationToken ct)
+        {
+            if (model.IsRejected)
+            {
+                var reason = (model.RejectionReason ?? string.Empty).Trim();
+                if (reason.Length < 3)
+                {
+                    throw new BusinessRuleException("Enter a quality-rejection reason (at least 3 characters).");
+                }
+
+                return (0m, 0m, true, reason);
+            }
+
+            var applicableRate = await _milkRateService.GetApplicableRateAsync(model.SocietyID, fatPercent, snf, clr, collectionDate, ct);
+            if (applicableRate is null)
+            {
+                throw new BusinessRuleException(
+                    $"No applicable rate found for {fatPercent}% fat, {snf} SNF, {clr} CLR on {collectionDate:dd-MMM-yyyy}. " +
+                    "Add a matching fat/SNF/CLR band on the Milk Rate Chart, or record this entry as a quality rejection.");
+            }
+
+            return (
+                applicableRate.RatePerLitre,
+                SettlementCalculator.ComputeCollectionAmount(quantity, applicableRate.RatePerLitre),
+                false,
+                null);
         }
     }
 }

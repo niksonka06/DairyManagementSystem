@@ -4,6 +4,10 @@
 }
 
 <h2 class="mb-4">Audit Log</h2>
+@if (ViewBag.ScopeNote is string scopeNote)
+{
+    <p class="text-muted">@scopeNote</p>
+}
 
 <form method="get" class="row g-2 mb-4 align-items-end">
     <div class="col-auto">

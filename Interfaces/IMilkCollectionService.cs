@@ -1,4 +1,5 @@
 using DairyManagementSystem.Models.Entities;
+using DairyManagementSystem.Models.Enums;
 using DairyManagementSystem.Models.ViewModels;
 
 namespace DairyManagementSystem.Interfaces
@@ -11,5 +12,6 @@ namespace DairyManagementSystem.Interfaces
         Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default);
         Task<MilkCollection> CreateAsync(MilkCollectionFormViewModel model, int performedByUserId, CancellationToken ct = default);
         Task UpdateAsync(MilkCollectionFormViewModel model, int performedByUserId, CancellationToken ct = default);
+        Task EnsureShiftOpenAsync(int societyId, DateTime date, Shift shift, CancellationToken ct = default);
     }
 }

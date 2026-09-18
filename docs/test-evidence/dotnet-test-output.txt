@@ -1,0 +1,6 @@
+dotnet test DairyManagementSystem.Tests/DairyManagementSystem.Tests.csproj --nologo
+
+Passed!  - Failed:     0, Passed:    41, Skipped:     0, Total:    41, Duration: 6 s - DairyManagementSystem.Tests.dll (net8.0)
+
+Captured: 18 Sep 2026
+Coverage includes helper unit tests, service tests (collection, rates, settlement, dispatch, feed issue, isolation, validation), and HTTP integration tests (roles, farmer isolation, PDF, antiforgery, duplicate collection, admin dashboard).

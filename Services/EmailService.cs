@@ -29,15 +29,13 @@ namespace DairyManagementSystem.Services
             var fromName = _configuration["EmailSettings:FromName"]?.Trim() ?? "Smart Dairy Cooperative";
             var fromAddress = _configuration["EmailSettings:FromAddress"]?.Trim();
 
-            _logger.LogWarning(
-                "Email send requested. Enabled={Enabled}, Host={Host}, Port={Port}, SmtpUser={SmtpUser}, From={From}, To={To}",
-                enabled, host, port, user, fromAddress, toEmail);
+            _logger.LogInformation(
+                "Email send requested. Enabled={Enabled}, Host={Host}, Port={Port}, From configured={FromConfigured}, To configured={ToConfigured}",
+                enabled, host, port, !string.IsNullOrWhiteSpace(fromAddress), !string.IsNullOrWhiteSpace(toEmail));
 
             if (!enabled)
             {
-                _logger.LogWarning(
-                    "[EMAIL SIMULATED - not sent, EmailSettings:Enabled=false] To: {To} | Subject: {Subject} | Body: {Body}",
-                    toEmail, subject, htmlBody);
+                _logger.LogInformation("Email simulated (EmailSettings:Enabled=false). Subject: {Subject}", subject);
                 return false;
             }
 
@@ -47,8 +45,7 @@ namespace DairyManagementSystem.Services
                 string.IsNullOrWhiteSpace(fromAddress))
             {
                 _logger.LogWarning(
-                    "Email is enabled but SmtpHost/SmtpUser/SmtpPassword/FromAddress are not configured. Message NOT sent to {To}.",
-                    toEmail);
+                    "Email is enabled but SmtpHost/SmtpUser/SmtpPassword/FromAddress are not configured. Message NOT sent.");
                 return false;
             }
 
@@ -69,12 +66,12 @@ namespace DairyManagementSystem.Services
                 await client.SendAsync(message, ct);
                 await client.DisconnectAsync(true, ct);
 
-                _logger.LogInformation("Email SENT via SMTP ({Host}:{Port}) to {To}. Subject: {Subject}", host, port, toEmail, subject);
+                _logger.LogInformation("Email SENT via SMTP ({Host}:{Port}). Subject: {Subject}", host, port, subject);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to send email to {To}.", toEmail);
+                _logger.LogError(ex, "Failed to send email.");
                 return false;
             }
         }

@@ -7,6 +7,11 @@ namespace DairyManagementSystem.Models.ViewModels
         public DateTime SelectedDate { get; set; }
         public decimal DayTotalQuantity { get; set; }
         public decimal DayTotalAmount { get; set; }
+        public decimal DayRejectedQuantity { get; set; }
+        public bool MorningClosed { get; set; }
+        public bool EveningClosed { get; set; }
+        public bool CanReopenMorning { get; set; }
+        public bool CanReopenEvening { get; set; }
         public MilkCollectionFormViewModel Form { get; set; } = new();
         public PagedTable<MilkCollectionListItemViewModel> Collections { get; set; } = new();
     }

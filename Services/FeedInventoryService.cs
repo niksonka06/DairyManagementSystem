@@ -50,7 +50,7 @@ namespace DairyManagementSystem.Services
             _auditService.Log(nameof(FeedInventory), item.FeedItemID, AuditAction.Created,
                 oldValue: null,
                 newValue: new { item.ItemType, item.FeedName, item.Unit, item.PricePerUnit },
-                performedByUserId);
+                performedByUserId, item.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
 
@@ -85,7 +85,7 @@ namespace DairyManagementSystem.Services
 
             _auditService.Log(nameof(FeedInventory), item.FeedItemID, AuditAction.Updated, oldSnapshot,
                 new { item.ItemType, item.FeedName, item.Unit, item.PricePerUnit, item.LowStockThreshold },
-                performedByUserId);
+                performedByUserId, item.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
         }
@@ -97,13 +97,14 @@ namespace DairyManagementSystem.Services
 
             var oldQuantity = item.StockQuantity;
             item.StockQuantity += model.QuantityToAdd!.Value;
+            _feedInventoryRepository.SetOriginalRowVersion(item, item.RowVersion);
 
             _auditService.Log(nameof(FeedInventory), item.FeedItemID, AuditAction.Updated,
                 oldValue: new { StockQuantity = oldQuantity },
                 newValue: new { StockQuantity = item.StockQuantity, Added = model.QuantityToAdd!.Value },
-                performedByUserId);
+                performedByUserId, item.SocietyID);
 
-            await _unitOfWork.SaveChangesAsync(ct);
+            await StockConcurrency.SaveOrThrowConcurrentAsync(() => _unitOfWork.SaveChangesAsync(ct), ct);
         }
 
         public async Task SetActiveStatusAsync(int feedItemId, int societyId, bool isActive, int performedByUserId, CancellationToken ct = default)
@@ -122,7 +123,7 @@ namespace DairyManagementSystem.Services
                 isActive ? AuditAction.Activated : AuditAction.Deactivated,
                 oldValue: new { IsActive = !isActive },
                 newValue: new { IsActive = isActive },
-                performedByUserId);
+                performedByUserId, item.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
         }

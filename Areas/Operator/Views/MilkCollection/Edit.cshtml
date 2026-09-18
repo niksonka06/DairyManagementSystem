@@ -9,6 +9,10 @@
 {
     <div class="alert alert-warning">This collection is locked by a settlement and cannot be edited.</div>
 }
+@if (ViewBag.IsShiftClosed == true)
+{
+    <div class="alert alert-warning">This shift is closed. Reopen it from Milk Collection before editing.</div>
+}
 
 <form asp-action="Edit" method="post" class="col-md-6">
     <input type="hidden" asp-for="CollectionID" />
@@ -57,9 +61,22 @@
         </div>
     </div>
 
-    <p class="text-muted">Rate and amount are recalculated automatically from fat %, SNF, CLR and date above.</p>
+    <p class="text-muted">Rate and amount are recalculated automatically from fat %, SNF, CLR and date above unless the entry is rejected.</p>
 
-    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <div class="form-check mb-3">
+        <input asp-for="IsRejected" class="form-check-input" />
+        <label asp-for="IsRejected" class="form-check-label"></label>
+    </div>
+    <div class="mb-3">
+        <label asp-for="RejectionReason" class="form-label"></label>
+        <input asp-for="RejectionReason" class="form-control" maxlength="300" />
+        <span asp-validation-for="RejectionReason" class="text-danger"></span>
+    </div>
+
+    @if (ViewBag.IsLocked != true && ViewBag.IsShiftClosed != true)
+    {
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    }
     <a asp-action="Receipt" asp-route-id="@Model.CollectionID" class="btn btn-outline-primary">Download receipt</a>
     <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
 </form>

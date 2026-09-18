@@ -48,13 +48,15 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
                 CLR = c.CLR,
                 RatePerLitre = c.RatePerLitre,
                 Amount = c.Amount,
-                IsLocked = c.IsLocked
+                IsLocked = c.IsLocked,
+                IsRejected = c.IsRejected,
+                RejectionReason = c.RejectionReason
             }).ToList();
 
             ViewBag.FromDate = effectiveFrom;
             ViewBag.ToDate = effectiveTo;
-            ViewBag.TotalQuantity = rows.Sum(r => r.Quantity);
-            ViewBag.TotalAmount = rows.Sum(r => r.Amount);
+            ViewBag.TotalQuantity = rows.Where(r => !r.IsRejected).Sum(r => r.Quantity);
+            ViewBag.TotalAmount = rows.Where(r => !r.IsRejected).Sum(r => r.Amount);
 
             var model = ListPaging.Apply(
                 rows, sort, dir, page,

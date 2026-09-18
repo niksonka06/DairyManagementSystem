@@ -33,7 +33,8 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
         public async Task<IActionResult> Index(DateTime? date, CancellationToken ct)
         {
             var societyId = await CurrentOperatorSocietyIdAsync();
-            var societyName = await CurrentOperatorSocietyNameAsync();
+            var societyName = HttpContext.Items["OperatorSocietyName"] as string
+                ?? await CurrentOperatorSocietyNameAsync();
             var overviewDate = (date ?? DateTime.Today).Date;
 
             var daily = await _reportService.GetDailyCollectionReportAsync(societyId, overviewDate, ct);

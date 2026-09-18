@@ -55,6 +55,7 @@ namespace DairyManagementSystem.Repositories
             return await DbSet
                 .Where(c => c.FarmerID == farmerId
                             && !c.IsLocked
+                            && !c.IsRejected
                             && c.CollectionDate >= periodStart.Date
                             && c.CollectionDate <= periodEnd.Date)
                 .ToListAsync(ct);
@@ -69,8 +70,15 @@ namespace DairyManagementSystem.Repositories
         {
             var day = date.Date;
             return await DbSet
-                .Where(c => c.SocietyID == societyId && c.CollectionDate == day)
+                .Where(c => c.SocietyID == societyId && c.CollectionDate == day && !c.IsRejected)
                 .SumAsync(c => (decimal?)c.Quantity, ct) ?? 0m;
+        }
+
+        public async Task<bool> HasLockedInShiftAsync(int societyId, DateTime date, Shift shift, CancellationToken ct = default)
+        {
+            var day = date.Date;
+            return await DbSet.AnyAsync(
+                c => c.SocietyID == societyId && c.CollectionDate == day && c.Shift == shift && c.IsLocked, ct);
         }
 
         public async Task<List<MilkCollection>> GetBySocietyAndDateRangeAsync(int societyId, DateTime from, DateTime to, CancellationToken ct = default)

@@ -13,9 +13,55 @@
             <input id="collection-day" type="date" name="date" value="@selectedDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm" onchange="this.form.submit()" />
         </form>
         <div class="milk-collect-stats">
-            <span><strong>@Model.DayTotalQuantity.ToString("0.00") L</strong> quantity</span>
+            <span><strong>@Model.DayTotalQuantity.ToString("0.00") L</strong> accepted</span>
             <span><strong>₹@Model.DayTotalAmount.ToString("0.00")</strong> amount</span>
+            @if (Model.DayRejectedQuantity > 0)
+            {
+                <span><strong>@Model.DayRejectedQuantity.ToString("0.00") L</strong> rejected</span>
+            }
             <span><strong>@Model.Collections.TotalCount</strong> entries</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            @if (!Model.MorningClosed)
+            {
+                <form asp-action="CloseShift" method="post">
+                    <input type="hidden" name="date" value="@selectedDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="shift" value="Morning" />
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Close morning</button>
+                </form>
+            }
+            else if (Model.CanReopenMorning)
+            {
+                <form asp-action="ReopenShift" method="post">
+                    <input type="hidden" name="date" value="@selectedDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="shift" value="Morning" />
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Reopen morning</button>
+                </form>
+            }
+            else
+            {
+                <span class="badge bg-warning text-dark align-self-center">Morning closed</span>
+            }
+            @if (!Model.EveningClosed)
+            {
+                <form asp-action="CloseShift" method="post">
+                    <input type="hidden" name="date" value="@selectedDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="shift" value="Evening" />
+                    <button type="submit" class="btn btn-sm btn-outline-warning">Close evening</button>
+                </form>
+            }
+            else if (Model.CanReopenEvening)
+            {
+                <form asp-action="ReopenShift" method="post">
+                    <input type="hidden" name="date" value="@selectedDate.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="shift" value="Evening" />
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Reopen evening</button>
+                </form>
+            }
+            else
+            {
+                <span class="badge bg-warning text-dark align-self-center">Evening closed</span>
+            }
         </div>
     </div>
 
@@ -90,9 +136,29 @@
                             </div>
                         </div>
 
-                        <p class="text-muted small mb-2">Rate and amount come from the milk rate chart when you save.</p>
+                        <p class="text-muted small mb-2">Rate and amount come from the milk rate chart when you save. Rejected milk is stored as ₹0 and is not paid or dispatched.</p>
 
-                        <button type="submit" class="btn btn-primary milk-collect-submit">Record Collection</button>
+                        <div class="form-check mb-2">
+                            <input asp-for="Form.IsRejected" class="form-check-input" />
+                            <label asp-for="Form.IsRejected" class="form-check-label"></label>
+                        </div>
+                        <div class="mb-2">
+                            <label asp-for="Form.RejectionReason" class="form-label"></label>
+                            <input asp-for="Form.RejectionReason" class="form-control form-control-sm" maxlength="300" placeholder="Required when rejected" />
+                            <span asp-validation-for="Form.RejectionReason" class="text-danger"></span>
+                        </div>
+
+                        @{
+                            var selectedShiftClosed = Model.Form.Shift == DairyManagementSystem.Models.Enums.Shift.Evening ? Model.EveningClosed : Model.MorningClosed;
+                        }
+                        @if (selectedShiftClosed)
+                        {
+                            <div class="alert alert-warning py-2">This shift is closed. Reopen it to record more collections.</div>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-primary milk-collect-submit">Record Collection</button>
+                        }
                     </form>
                 </div>
             </div>
@@ -129,7 +195,11 @@
                                     <td>₹@c.RatePerLitre.ToString("0.00")</td>
                                     <td>₹@c.Amount.ToString("0.00")</td>
                                     <td>
-                                        @if (c.IsLocked)
+                                        @if (c.IsRejected)
+                                        {
+                                            <span class="badge bg-danger" title="@c.RejectionReason">Rejected</span>
+                                        }
+                                        else if (c.IsLocked)
                                         {
                                             <span class="badge bg-warning text-dark">Locked</span>
                                         }
@@ -140,7 +210,7 @@
                                     </td>
                                     <td class="text-end text-nowrap">
                                         <a asp-action="Receipt" asp-route-id="@c.CollectionID" class="btn btn-sm btn-outline-secondary">Receipt</a>
-                                        @if (!c.IsLocked)
+                                        @if (!c.IsLocked && !((c.Shift == DairyManagementSystem.Models.Enums.Shift.Morning && Model.MorningClosed) || (c.Shift == DairyManagementSystem.Models.Enums.Shift.Evening && Model.EveningClosed)))
                                         {
                                             <a asp-action="Edit" asp-route-id="@c.CollectionID" class="btn btn-sm btn-outline-primary">Edit</a>
                                         }

@@ -116,15 +116,15 @@ namespace DairyManagementSystem.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user is null)
             {
-                _logger.LogWarning("Forgot password: no account for {Email}. No email sent.", model.Email);
+                _logger.LogInformation("Forgot password: no matching active account. No email sent.");
             }
             else if (!user.IsActive)
             {
-                _logger.LogWarning("Forgot password: account {Email} is inactive. No email sent.", model.Email);
+                _logger.LogInformation("Forgot password: account is inactive. No email sent.");
             }
             else if (string.IsNullOrWhiteSpace(user.Email))
             {
-                _logger.LogWarning("Forgot password: account {UserId} has no email. No email sent.", user.Id);
+                _logger.LogInformation("Forgot password: account {UserId} has no email. No email sent.", user.Id);
             }
             else
             {
@@ -136,7 +136,7 @@ namespace DairyManagementSystem.Controllers
                     values: new { area = "", email = user.Email, code },
                     protocol: Request.Scheme)!;
 
-                _logger.LogWarning("Forgot password: sending reset mail to {Email}.", user.Email);
+                _logger.LogInformation("Forgot password: sending reset mail for user {UserId}.", user.Id);
                 await _emailService.SendAsync(
                     user.Email,
                     "Reset your Smart Dairy Cooperative password",

@@ -43,6 +43,13 @@ namespace DairyManagementSystem.Models.ViewModels
 
         public byte[]? RowVersion { get; set; }
 
+        [Display(Name = "Reject for quality")]
+        public bool IsRejected { get; set; }
+
+        [Display(Name = "Rejection reason")]
+        [MaxLength(300)]
+        public string? RejectionReason { get; set; }
+
         public List<FarmerListItemViewModel> AvailableFarmers { get; set; } = new();
     }
 }

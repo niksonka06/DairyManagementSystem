@@ -37,6 +37,11 @@ namespace DairyManagementSystem.Models.Entities
         public bool IsLocked { get; set; } = false;
         public int? LockedBySettlementID { get; set; }
 
+        // Quality rejection: milk is recorded (visible to the farmer) but
+        // pays nothing and is excluded from dispatch / settlement totals.
+        public bool IsRejected { get; set; }
+        public string? RejectionReason { get; set; }
+
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
     }
 }

@@ -4,7 +4,7 @@ namespace DairyManagementSystem.Interfaces
 {
     public interface IAdvancePaymentRepository : IRepository<AdvancePayment>
     {
-        Task<List<AdvancePayment>> GetUnappliedByFarmerAsync(int farmerId, CancellationToken ct = default);
+        Task<List<AdvancePayment>> GetUnappliedByFarmerAsync(int farmerId, DateTime? paidOnOrBefore = null, CancellationToken ct = default);
         Task<List<AdvancePayment>> GetBySocietyAsync(int societyId, CancellationToken ct = default);
 
         // Used when cancelling a Generated settlement — finds every advance

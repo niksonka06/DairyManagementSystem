@@ -1,4 +1,3 @@
-using DairyManagementSystem.Areas.Operator.Filters;
 using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
@@ -10,7 +9,6 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
 {
     [Area("Operator")]
     [Authorize(Roles = Roles.Operator)]
-    [ServiceFilter(typeof(EnsureActiveOperatorSocietyFilter))]
     public abstract class OperatorControllerBase : Controller
     {
         protected UserManager<ApplicationUser> UserManager { get; }

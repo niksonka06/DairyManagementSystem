@@ -12,6 +12,8 @@ namespace DairyManagementSystem.Models.Enums
         Activated,
         Deactivated,
         SettlementGenerated,
-        Unlocked
+        Unlocked,
+        ShiftClosed,
+        ShiftReopened
     }
 }

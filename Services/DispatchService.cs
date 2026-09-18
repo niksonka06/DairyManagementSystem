@@ -3,6 +3,7 @@ using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
 using DairyManagementSystem.Models.ViewModels;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace DairyManagementSystem.Services
@@ -67,12 +68,14 @@ namespace DairyManagementSystem.Services
             };
 
             _dispatchRepository.Add(dispatch);
-            await _unitOfWork.SaveChangesAsync(ct);
+            await SaveChangesHandlingUniqueAsync(
+                $"A dispatch record for {date:dd-MMM-yyyy} already exists for this society.", ct);
 
             _auditService.Log(nameof(Dispatch), dispatch.DispatchID, AuditAction.Created,
                 oldValue: null,
                 newValue: new { dispatch.DispatchDate, dispatch.TotalCollected, dispatch.TotalDispatched, Variance = dispatch.Variance },
-                performedByUserId);
+                performedByUserId,
+                dispatch.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
 
@@ -114,9 +117,11 @@ namespace DairyManagementSystem.Services
 
             _auditService.Log(nameof(Dispatch), dispatch.DispatchID, AuditAction.Updated, oldSnapshot,
                 new { dispatch.DispatchDate, dispatch.TotalCollected, dispatch.TotalDispatched, Variance = dispatch.Variance },
-                performedByUserId);
+                performedByUserId,
+                dispatch.SocietyID);
 
-            await _unitOfWork.SaveChangesAsync(ct);
+            await SaveChangesHandlingUniqueAsync(
+                $"A dispatch record for {date:dd-MMM-yyyy} already exists for this society.", ct);
         }
 
         public async Task<decimal> GetCollectedLitresAsync(int societyId, DateTime date, CancellationToken ct = default)
@@ -124,21 +129,30 @@ namespace DairyManagementSystem.Services
             return await _collectionRepository.GetTotalQuantityBySocietyAndDateAsync(societyId, date.Date, ct);
         }
 
+        private async Task SaveChangesHandlingUniqueAsync(string duplicateMessage, CancellationToken ct)
+        {
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                throw new BusinessRuleException(duplicateMessage);
+            }
+        }
+
         private void EnsureVarianceReasonIfNeeded(decimal totalCollected, decimal totalDispatched, string? reason)
         {
-            var variance = totalCollected - totalDispatched;
-            var variancePercent = totalCollected == 0 ? 0 : Math.Abs(variance) / totalCollected * 100;
+            var variancePercent = DispatchVariance.Percent(totalCollected, totalDispatched);
 
-            // Config value in appsettings.json, not hardcoded — the synopsis
-            // calls this a "configured threshold" without giving a number
-            // (flagged back in Stage 0). Falls back to 5% if unset/zero.
             var thresholdPercent = _configuration.GetValue<decimal?>("AppSettings:DispatchVarianceThresholdPercent");
             if (thresholdPercent is null or <= 0)
             {
                 thresholdPercent = 5m;
             }
 
-            if (variancePercent > thresholdPercent && string.IsNullOrWhiteSpace(reason))
+            if (DispatchVariance.RequiresReason(totalCollected, totalDispatched, thresholdPercent.Value)
+                && string.IsNullOrWhiteSpace(reason))
             {
                 throw new BusinessRuleException(
                     $"Variance is {variancePercent:0.0}% (collected {totalCollected:0.00}L, dispatched {totalDispatched:0.00}L), " +

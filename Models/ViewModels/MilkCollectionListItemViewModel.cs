@@ -16,5 +16,7 @@ namespace DairyManagementSystem.Models.ViewModels
         public decimal RatePerLitre { get; set; }
         public decimal Amount { get; set; }
         public bool IsLocked { get; set; }
+        public bool IsRejected { get; set; }
+        public string? RejectionReason { get; set; }
     }
 }

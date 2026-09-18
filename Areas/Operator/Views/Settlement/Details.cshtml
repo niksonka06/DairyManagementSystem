@@ -71,11 +71,15 @@
     }
     else if (Model.Status == SettlementStatus.Generated)
     {
+        <form asp-action="Recalculate" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
+            <input type="hidden" asp-for="RowVersion" />
+            <button type="submit" class="btn btn-outline-secondary">Include later collections / issues</button>
+        </form>
         <form asp-action="MarkPaid" asp-route-id="@Model.PaymentID" method="post" class="d-inline">
             <input type="hidden" asp-for="RowVersion" />
             <button type="submit" class="btn btn-success">@(Model.NetAmount < 0 ? "Close period (carry to next week)" : "Mark as Paid")</button>
         </form>
-        <p class="text-muted mt-2">To correct a generated settlement, an Admin must unlock it (Admin area → Unlock Settlements), which requires a reason and is fully audited.</p>
+        <p class="text-muted mt-2">If milk or feed was recorded after this settlement was generated, use Include later collections / issues before paying. To fully reverse a generated settlement, an Admin must unlock it (Admin area → Unlock Settlements).</p>
     }
 </div>
 

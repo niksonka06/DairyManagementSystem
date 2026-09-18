@@ -35,5 +35,7 @@ namespace DairyManagementSystem.Interfaces
         // Farmer Portal — a farmer's OWN collections only, never another
         // farmer's, enforced by filtering on FarmerID at the query itself.
         Task<List<MilkCollection>> GetByFarmerAndDateRangeAsync(int farmerId, DateTime from, DateTime to, CancellationToken ct = default);
+
+        Task<bool> HasLockedInShiftAsync(int societyId, DateTime date, Shift shift, CancellationToken ct = default);
     }
 }

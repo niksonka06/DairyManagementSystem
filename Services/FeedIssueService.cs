@@ -87,8 +87,8 @@ namespace DairyManagementSystem.Services
 
             // 2. DEDUCT STOCK
             item.StockQuantity -= quantity;
+            _feedInventoryRepository.SetOriginalRowVersion(item, item.RowVersion);
 
-            // 3. CREATE FARMER ISSUE RECORD (+ 4. DEDUCTION, captured on the same row via TotalCost)
             var issue = new FeedIssue
             {
                 FeedItemID = item.FeedItemID,
@@ -110,16 +110,48 @@ namespace DairyManagementSystem.Services
             // stock deduction on `item` and the new `issue` row together. If
             // this throws for any reason, NEITHER change is persisted —
             // EF Core's own transaction guarantees that.
-            await _unitOfWork.SaveChangesAsync(ct);
+            await StockConcurrency.SaveOrThrowConcurrentAsync(() => _unitOfWork.SaveChangesAsync(ct), ct);
 
             _auditService.Log(nameof(FeedIssue), issue.IssueID, AuditAction.Created,
                 oldValue: null,
                 newValue: new { issue.FarmerID, issue.FeedItemID, issue.ItemType, issue.Quantity, issue.TotalCost, issue.IssueDate },
-                performedByUserId);
+                performedByUserId, issue.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
 
             return issue;
+        }
+
+        public async Task VoidUnlockedAsync(int issueId, int societyId, int performedByUserId, CancellationToken ct = default)
+        {
+            var issue = await _feedIssueRepository.GetByIdAsync(issueId, ct)
+                ?? throw new BusinessRuleException("Issue not found.");
+
+            if (issue.SocietyID != societyId)
+            {
+                throw new BusinessRuleException("Issue not found in this society.");
+            }
+
+            if (issue.IsLocked)
+            {
+                throw new BusinessRuleException("This issue is locked in a generated settlement and cannot be voided. An Admin must unlock the settlement first.");
+            }
+
+            var item = await _feedInventoryRepository.GetByIdWithinSocietyAsync(issue.FeedItemID, societyId, ct)
+                ?? throw new BusinessRuleException("The inventory item for this issue is missing.");
+
+            var oldStock = item.StockQuantity;
+            item.StockQuantity += issue.Quantity;
+            _feedInventoryRepository.SetOriginalRowVersion(item, item.RowVersion);
+
+            _auditService.Log(nameof(FeedIssue), issue.IssueID, AuditAction.Deleted,
+                oldValue: new { issue.FarmerID, issue.FeedItemID, issue.Quantity, issue.TotalCost, issue.IssueDate },
+                newValue: new { Voided = true, StockRestoredTo = item.StockQuantity, StockWas = oldStock },
+                performedByUserId, issue.SocietyID);
+
+            _feedIssueRepository.Remove(issue);
+
+            await StockConcurrency.SaveOrThrowConcurrentAsync(() => _unitOfWork.SaveChangesAsync(ct), ct);
         }
     }
 }

@@ -8,5 +8,6 @@ namespace DairyManagementSystem.Interfaces
         Task<List<FeedIssue>> GetBySocietyAsync(int societyId, CancellationToken ct = default);
         Task<List<FeedIssue>> GetByFarmerAsync(int farmerId, int societyId, CancellationToken ct = default);
         Task<FeedIssue> IssueToFarmerAsync(FeedIssueFormViewModel model, int performedByUserId, CancellationToken ct = default);
+        Task VoidUnlockedAsync(int issueId, int societyId, int performedByUserId, CancellationToken ct = default);
     }
 }

@@ -14,12 +14,12 @@ namespace DairyManagementSystem.Services
 
         public async Task<(List<AuditLog> Items, int TotalCount)> SearchAsync(
             string? entityType, int? entityId, int? performedBy, DateTime? fromDate, DateTime? toDate,
-            int page, int pageSize, CancellationToken ct = default)
+            int page, int pageSize, int? societyId = null, CancellationToken ct = default)
         {
             var safePage = page < 1 ? 1 : page;
             var safePageSize = pageSize is < 1 or > 200 ? 50 : pageSize;
 
-            return await _auditLogRepository.GetPagedAsync(entityType, entityId, performedBy, fromDate, toDate, safePage, safePageSize, ct);
+            return await _auditLogRepository.GetPagedAsync(entityType, entityId, performedBy, fromDate, toDate, safePage, safePageSize, societyId, ct);
         }
     }
 }

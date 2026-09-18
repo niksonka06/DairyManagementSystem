@@ -36,14 +36,15 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
             var viewModel = ListPaging.Apply(
                 issues.Select(i => new FeedIssueListItemViewModel
                 {
-                    IssueID = i.IssueID,
-                    FarmerCode = i.Farmer?.FarmerCode ?? string.Empty,
-                    FarmerName = i.Farmer?.FullName ?? string.Empty,
-                    ItemType = i.ItemType,
-                    FeedName = i.FeedItem?.FeedName ?? string.Empty,
-                    Quantity = i.Quantity,
-                    TotalCost = i.TotalCost,
-                    IssueDate = i.IssueDate
+                IssueID = i.IssueID,
+                FarmerCode = i.Farmer?.FarmerCode ?? string.Empty,
+                FarmerName = i.Farmer?.FullName ?? string.Empty,
+                ItemType = i.ItemType,
+                FeedName = i.FeedItem?.FeedName ?? string.Empty,
+                Quantity = i.Quantity,
+                TotalCost = i.TotalCost,
+                IssueDate = i.IssueDate,
+                IsLocked = i.IsLocked
                 }),
                 sort, dir, page,
                 new Dictionary<string, Func<FeedIssueListItemViewModel, object?>>
@@ -98,6 +99,24 @@ namespace DairyManagementSystem.Areas.Operator.Controllers
                 model.AvailableFarmers = await AvailableFarmersAsync(ct);
                 return View(model);
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Void(int id, CancellationToken ct)
+        {
+            var societyId = await CurrentOperatorSocietyIdAsync();
+            try
+            {
+                await _feedIssueService.VoidUnlockedAsync(id, societyId, CurrentUserId(), ct);
+                TempData["Success"] = "Issue voided and stock restored.";
+            }
+            catch (BusinessRuleException ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         private async Task<List<FeedInventoryListItemViewModel>> AvailableItemsAsync(CancellationToken ct)

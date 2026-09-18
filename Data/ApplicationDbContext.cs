@@ -22,6 +22,7 @@ namespace DairyManagementSystem.Data
         public DbSet<SettlementDeduction> SettlementDeductions => Set<SettlementDeduction>();
         public DbSet<AdvancePayment> AdvancePayments => Set<AdvancePayment>();
         public DbSet<Dispatch> Dispatches => Set<Dispatch>();
+        public DbSet<ShiftClose> ShiftCloses => Set<ShiftClose>();
         public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
         // Real business entities added here module by module as each stage
@@ -144,7 +145,11 @@ namespace DairyManagementSystem.Data
                 entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_Quantity", "[Quantity] BETWEEN 0.5 AND 500"));
                 entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_FatPercent", "[FatPercent] BETWEEN 2.5 AND 9.0"));
                 entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_SNF", "[SNF] IS NULL OR [SNF] BETWEEN 7.5 AND 11.0"));
-                entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_RatePerLitre", "[RatePerLitre] > 0"));
+                entity.ToTable(t => t.HasCheckConstraint("CK_MilkCollections_RatePerLitre", "[RatePerLitre] >= 0"));
+                entity.ToTable(t => t.HasCheckConstraint(
+                    "CK_MilkCollections_Rejection",
+                    "([IsRejected] = 0 AND [RatePerLitre] > 0) OR ([IsRejected] = 1 AND [RatePerLitre] = 0 AND [Amount] = 0)"));
+                entity.Property(c => c.RejectionReason).HasMaxLength(300);
 
                 // One entry per farmer/date/shift — the duplicate-prevention
                 // rule enforced at the database level too, not just the
@@ -167,6 +172,24 @@ namespace DairyManagementSystem.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.Property(c => c.RowVersion).IsRowVersion();
+            });
+
+            builder.Entity<ShiftClose>(entity =>
+            {
+                entity.HasKey(s => s.ShiftCloseID);
+                entity.Property(s => s.CollectionDate).HasColumnType("date");
+                entity.Property(s => s.Shift).HasConversion<string>().HasMaxLength(10);
+                entity.HasIndex(s => new { s.SocietyID, s.CollectionDate, s.Shift }).IsUnique();
+
+                entity.HasOne(s => s.Society)
+                    .WithMany()
+                    .HasForeignKey(s => s.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(s => s.ClosedByUser)
+                    .WithMany()
+                    .HasForeignKey(s => s.ClosedBy)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Entity<FeedInventory>(entity =>
@@ -348,9 +371,13 @@ namespace DairyManagementSystem.Data
                     .HasForeignKey(a => a.PerformedBy)
                     .OnDelete(DeleteBehavior.Restrict); // never cascade-delete audit history if a user is removed
 
-                // Fast lookups by "show me the history for this entity" — the
-                // access pattern every audit-log viewer (Stage 14) will use.
+                entity.HasOne(a => a.Society)
+                    .WithMany()
+                    .HasForeignKey(a => a.SocietyID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
                 entity.HasIndex(a => new { a.EntityType, a.EntityID });
+                entity.HasIndex(a => a.SocietyID);
             });
         }
     }

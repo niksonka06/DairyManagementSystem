@@ -21,17 +21,22 @@ namespace DairyManagementSystem.Helpers
                         new[] { "Fat %", collection.FatPercent.ToString("0.00") },
                         new[] { "SNF", collection.SNF?.ToString("0.00") ?? "—" },
                         new[] { "CLR", collection.CLR?.ToString("0.00") ?? "—" },
-                        new[] { "Rate / litre", $"Rs.{collection.RatePerLitre:0.00}" },
-                        new[] { "Amount", $"Rs.{collection.Amount:0.00}" }
+                        new[] { "Rate / litre", collection.IsRejected ? "—" : $"Rs.{collection.RatePerLitre:0.00}" },
+                        new[] { "Amount", collection.IsRejected ? "Rs.0.00 (rejected)" : $"Rs.{collection.Amount:0.00}" },
+                        new[] { "Quality", collection.IsRejected ? $"Rejected — {collection.RejectionReason}" : "Accepted" }
                     }
                 }
             };
+
+            var summary = collection.IsRejected
+                ? new[] { "This entry was rejected for quality. Amount payable: Rs.0.00" }
+                : new[] { $"Amount payable for this entry: Rs.{collection.Amount:0.00}" };
 
             return PdfReportGenerator.Generate(
                 "Milk Collection Receipt",
                 $"Receipt #{collection.CollectionID}  |  {collection.CollectionDate:dd-MMM-yyyy} {collection.Shift}",
                 sections,
-                new[] { $"Amount payable for this entry: Rs.{collection.Amount:0.00}" });
+                summary);
         }
     }
 }

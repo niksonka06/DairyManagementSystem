@@ -52,7 +52,11 @@
                 <td>₹@r.RatePerLitre.ToString("0.00")</td>
                 <td>₹@r.Amount.ToString("0.00")</td>
                 <td>
-                    @if (r.IsLocked)
+                    @if (r.IsRejected)
+                    {
+                        <span class="badge bg-danger" title="@r.RejectionReason">Rejected</span>
+                    }
+                    else if (r.IsLocked)
                     {
                         <span class="badge bg-warning text-dark">Settled</span>
                     }

@@ -3,6 +3,7 @@ using DairyManagementSystem.Interfaces;
 using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Models.Enums;
 using DairyManagementSystem.Models.ViewModels;
+using Microsoft.EntityFrameworkCore;
 
 namespace DairyManagementSystem.Services
 {
@@ -79,7 +80,7 @@ namespace DairyManagementSystem.Services
                     $"No unlocked collections found for this farmer between {periodStart:dd-MMM-yyyy} and {periodEnd:dd-MMM-yyyy}.");
             }
 
-            var advancePaid = (await _advancePaymentRepository.GetUnappliedByFarmerAsync(model.FarmerID, ct)).Sum(a => a.Amount);
+            var advancePaid = (await _advancePaymentRepository.GetUnappliedByFarmerAsync(model.FarmerID, periodEnd, ct)).Sum(a => a.Amount);
 
             var otherDeductionsTotal =
                 (model.LoanDeduction ?? 0) +
@@ -113,14 +114,14 @@ namespace DairyManagementSystem.Services
             await ExecuteInTransactionAsync(async () =>
             {
                 _paymentRepository.Add(payment);
-                await _unitOfWork.SaveChangesAsync(ct); // payment.PaymentID now populated
+                await SaveChangesHandlingUniqueAsync(periodStart, periodEnd, ct);
 
                 AddDeductionLines(payment.PaymentID, model);
 
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.Created,
                     oldValue: null,
                     newValue: new { payment.FarmerID, payment.PeriodStart, payment.PeriodEnd, payment.GrossAmount, payment.NetAmount },
-                    performedByUserId);
+                    performedByUserId, payment.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct);
             }, ct);
@@ -133,17 +134,64 @@ namespace DairyManagementSystem.Services
             var payment = await _paymentRepository.GetByIdWithinSocietyAsync(paymentId, societyId, ct)
                 ?? throw new BusinessRuleException("Settlement not found.");
 
-            if (payment.Status != SettlementStatus.Draft)
+            if (payment.Status != SettlementStatus.Draft && payment.Status != SettlementStatus.Generated)
             {
-                throw new BusinessRuleException("Only Draft settlements can be recalculated.");
+                throw new BusinessRuleException("Only Draft or Generated (unpaid) settlements can be recalculated.");
             }
 
             ApplyRowVersion(payment, rowVersion);
 
             await ExecuteInTransactionAsync(async () =>
             {
-                var (gross, feedDeduction, medicineDeduction) = await ComputeAutoAmountsAsync(payment.FarmerID, payment.PeriodStart, payment.PeriodEnd, ct);
-                var advancePaid = (await _advancePaymentRepository.GetUnappliedByFarmerAsync(payment.FarmerID, ct)).Sum(a => a.Amount);
+                decimal gross;
+                decimal feedDeduction;
+                decimal medicineDeduction;
+                decimal advancePaid;
+                int newlyLockedCollections = 0;
+                int newlyLockedIssues = 0;
+                int newlyAppliedAdvances = 0;
+
+                if (payment.Status == SettlementStatus.Draft)
+                {
+                    (gross, feedDeduction, medicineDeduction) = await ComputeAutoAmountsAsync(payment.FarmerID, payment.PeriodStart, payment.PeriodEnd, ct);
+                    advancePaid = (await _advancePaymentRepository.GetUnappliedByFarmerAsync(payment.FarmerID, payment.PeriodEnd, ct)).Sum(a => a.Amount);
+                }
+                else
+                {
+                    var lockedCollections = await _collectionRepository.GetLockedBySettlementAsync(payment.PaymentID, ct);
+                    var unlockedCollections = await _collectionRepository.GetUnlockedByFarmerAndPeriodAsync(payment.FarmerID, payment.PeriodStart, payment.PeriodEnd, ct);
+                    foreach (var c in unlockedCollections)
+                    {
+                        c.IsLocked = true;
+                        c.LockedBySettlementID = payment.PaymentID;
+                    }
+
+                    var lockedIssues = await _feedIssueRepository.GetLockedBySettlementAsync(payment.PaymentID, ct);
+                    var unlockedIssues = await _feedIssueRepository.GetUnlockedByFarmerAndPeriodAsync(payment.FarmerID, payment.PeriodStart, payment.PeriodEnd, ct);
+                    foreach (var i in unlockedIssues)
+                    {
+                        i.IsLocked = true;
+                        i.LockedBySettlementID = payment.PaymentID;
+                    }
+
+                    gross = lockedCollections.Concat(unlockedCollections).Sum(c => c.Amount);
+                    feedDeduction = lockedIssues.Concat(unlockedIssues).Where(i => i.ItemType == ItemType.Feed).Sum(i => i.TotalCost);
+                    medicineDeduction = lockedIssues.Concat(unlockedIssues).Where(i => i.ItemType == ItemType.Medicine).Sum(i => i.TotalCost);
+
+                    newlyLockedCollections = unlockedCollections.Count;
+                    newlyLockedIssues = unlockedIssues.Count;
+
+                    var alreadyApplied = await _advancePaymentRepository.GetAppliedToPaymentAsync(payment.PaymentID, ct);
+                    var newAdvances = await _advancePaymentRepository.GetUnappliedByFarmerAsync(payment.FarmerID, payment.PeriodEnd, ct);
+                    foreach (var advance in newAdvances)
+                    {
+                        advance.IsApplied = true;
+                        advance.AppliedToPaymentID = payment.PaymentID;
+                    }
+
+                    advancePaid = alreadyApplied.Sum(a => a.Amount) + newAdvances.Sum(a => a.Amount);
+                    newlyAppliedAdvances = newAdvances.Count;
+                }
 
                 var oldSnapshot = new { payment.GrossAmount, payment.FeedDeduction, payment.MedicineDeduction, payment.AdvancePaid, payment.NetAmount };
 
@@ -155,8 +203,8 @@ namespace DairyManagementSystem.Services
 
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.Updated,
                     oldSnapshot,
-                    new { payment.GrossAmount, payment.FeedDeduction, payment.MedicineDeduction, payment.AdvancePaid, payment.NetAmount },
-                    performedByUserId);
+                    new { payment.GrossAmount, payment.FeedDeduction, payment.MedicineDeduction, payment.AdvancePaid, payment.NetAmount, newlyLockedCollections, newlyLockedIssues, newlyAppliedAdvances },
+                    performedByUserId, payment.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct);
             }, ct);
@@ -189,7 +237,7 @@ namespace DairyManagementSystem.Services
                     throw new BusinessRuleException("No unlocked collections remain for this farmer/period — nothing to generate.");
                 }
 
-                unappliedAdvances = await _advancePaymentRepository.GetUnappliedByFarmerAsync(payment.FarmerID, ct);
+                unappliedAdvances = await _advancePaymentRepository.GetUnappliedByFarmerAsync(payment.FarmerID, payment.PeriodEnd, ct);
                 var advancePaid = unappliedAdvances.Sum(a => a.Amount);
 
                 payment.GrossAmount = gross;
@@ -228,7 +276,7 @@ namespace DairyManagementSystem.Services
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.SettlementGenerated,
                     oldValue: null,
                     newValue: new { payment.NetAmount, CollectionsLocked = collections.Count, IssuesLocked = issues.Count, AdvancesApplied = unappliedAdvances.Count },
-                    performedByUserId);
+                    performedByUserId, payment.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct);
             }, ct);
@@ -267,7 +315,7 @@ namespace DairyManagementSystem.Services
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.Updated,
                     oldValue: new { Status = SettlementStatus.Generated },
                     newValue: new { Status = SettlementStatus.Paid },
-                    performedByUserId);
+                    performedByUserId, payment.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct);
             }, ct);
@@ -296,7 +344,7 @@ namespace DairyManagementSystem.Services
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.Deleted,
                     oldValue: new { Status = SettlementStatus.Draft },
                     newValue: new { Status = SettlementStatus.Cancelled },
-                    performedByUserId);
+                    performedByUserId, payment.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct);
             }, ct);
@@ -364,7 +412,7 @@ namespace DairyManagementSystem.Services
                 _auditService.Log(nameof(Payment), payment.PaymentID, AuditAction.Unlocked,
                     oldValue: new { Status = SettlementStatus.Generated },
                     newValue: new { Status = SettlementStatus.Cancelled, Reason = reason, CollectionsUnlocked = collections.Count, IssuesUnlocked = issues.Count },
-                    performedByUserId);
+                    performedByUserId, payment.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct);
             }, ct);
@@ -381,6 +429,19 @@ namespace DairyManagementSystem.Services
             }
 
             return (prior.NetAmount, prior.PeriodStart, prior.PeriodEnd);
+        }
+
+        private async Task SaveChangesHandlingUniqueAsync(DateTime periodStart, DateTime periodEnd, CancellationToken ct)
+        {
+            try
+            {
+                await _unitOfWork.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                throw new BusinessRuleException(
+                    $"A settlement for this farmer covering {periodStart:dd-MMM-yyyy} to {periodEnd:dd-MMM-yyyy} already exists.");
+            }
         }
 
         private void ApplyRowVersion(Payment payment, byte[] rowVersion)

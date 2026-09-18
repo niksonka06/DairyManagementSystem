@@ -11,11 +11,16 @@ namespace DairyManagementSystem.Repositories
         {
         }
 
-        public async Task<List<AdvancePayment>> GetUnappliedByFarmerAsync(int farmerId, CancellationToken ct = default)
+        public async Task<List<AdvancePayment>> GetUnappliedByFarmerAsync(int farmerId, DateTime? paidOnOrBefore = null, CancellationToken ct = default)
         {
-            return await DbSet
-                .Where(a => a.FarmerID == farmerId && !a.IsApplied)
-                .ToListAsync(ct);
+            var query = DbSet.Where(a => a.FarmerID == farmerId && !a.IsApplied);
+            if (paidOnOrBefore.HasValue)
+            {
+                var cutoff = paidOnOrBefore.Value.Date;
+                query = query.Where(a => a.PaymentDate <= cutoff);
+            }
+
+            return await query.ToListAsync(ct);
         }
 
         public async Task<List<AdvancePayment>> GetBySocietyAsync(int societyId, CancellationToken ct = default)

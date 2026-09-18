@@ -21,16 +21,17 @@ namespace DairyManagementSystem.Repositories
 
         public async Task BeginTransactionAsync(CancellationToken ct = default)
         {
-            _transaction = await _context.Database.BeginTransactionAsync(ct);
+            _transaction ??= await _context.Database.BeginTransactionAsync(ct);
         }
 
         public async Task CommitTransactionAsync(CancellationToken ct = default)
         {
             if (_transaction is null)
             {
-                throw new InvalidOperationException("No active transaction to commit. Call BeginTransactionAsync first.");
+                return;
             }
 
+            await _context.SaveChangesAsync(ct);
             await _transaction.CommitAsync(ct);
             await _transaction.DisposeAsync();
             _transaction = null;
@@ -40,7 +41,7 @@ namespace DairyManagementSystem.Repositories
         {
             if (_transaction is null)
             {
-                return; // nothing to roll back — safe no-op, e.g. if a failure happened before BeginTransactionAsync was even called
+                return;
             }
 
             await _transaction.RollbackAsync(ct);

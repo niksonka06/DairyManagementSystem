@@ -25,6 +25,7 @@
     <tr><th>Average Fat %</th><td>@Model.AverageFatPercent.ToString("0.00")%</td></tr>
     <tr><th>Morning</th><td>@Model.MorningQuantity.ToString("0.00") L — ₹@Model.MorningAmount.ToString("0.00")</td></tr>
     <tr><th>Evening</th><td>@Model.EveningQuantity.ToString("0.00") L — ₹@Model.EveningAmount.ToString("0.00")</td></tr>
+    <tr><th>Rejected quantity</th><td>@Model.RejectedQuantity.ToString("0.00") L</td></tr>
 </table>
 
 <a asp-action="Index" asp-route-societyId="@societyId" class="btn btn-outline-secondary">Back to Reports</a>

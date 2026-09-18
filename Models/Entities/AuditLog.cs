@@ -17,6 +17,11 @@ namespace DairyManagementSystem.Models.Entities
         public int PerformedBy { get; set; } // FK -> ApplicationUser.Id
         public ApplicationUser? PerformedByUser { get; set; }
 
+        // Null for unscoped admin actions (e.g. creating a society). Operators
+        // only see rows for their own society.
+        public int? SocietyID { get; set; }
+        public Society? Society { get; set; }
+
         public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     }
 }

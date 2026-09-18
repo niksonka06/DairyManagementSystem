@@ -10,6 +10,6 @@ namespace DairyManagementSystem.Interfaces
         // filter params are optional (null = don't filter on that field).
         Task<(List<AuditLog> Items, int TotalCount)> GetPagedAsync(
             string? entityType, int? entityId, int? performedBy, DateTime? fromDate, DateTime? toDate,
-            int page, int pageSize, CancellationToken ct = default);
+            int page, int pageSize, int? societyId = null, CancellationToken ct = default);
     }
 }

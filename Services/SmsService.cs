@@ -22,7 +22,7 @@ namespace DairyManagementSystem.Services
 
             if (!enabled)
             {
-                _logger.LogInformation("[SMS SIMULATED - not sent, SmsSettings:Enabled=false] To: {Phone} | Message: {Message}", phoneNumber, message);
+                _logger.LogInformation("[SMS SIMULATED - not sent, SmsSettings:Enabled=false]");
                 return;
             }
 

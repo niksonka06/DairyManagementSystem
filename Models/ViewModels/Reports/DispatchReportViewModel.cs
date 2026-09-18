@@ -9,6 +9,7 @@ namespace DairyManagementSystem.Models.ViewModels.Reports
         public decimal TotalDispatched { get; set; }
         public decimal Variance { get; set; }
         public decimal VariancePercent { get; set; }
+        public string? VarianceReason { get; set; }
         public string OperatorName { get; set; } = string.Empty;
     }
 

@@ -14,7 +14,7 @@ namespace DairyManagementSystem.Services
             _auditLogRepository = auditLogRepository;
         }
 
-        public void Log(string entityType, int entityId, AuditAction action, object? oldValue, object? newValue, int performedByUserId)
+        public void Log(string entityType, int entityId, AuditAction action, object? oldValue, object? newValue, int performedByUserId, int? societyId = null)
         {
             var entry = new AuditLog
             {
@@ -24,6 +24,7 @@ namespace DairyManagementSystem.Services
                 OldValue = oldValue is null ? null : JsonSerializer.Serialize(oldValue),
                 NewValue = newValue is null ? null : JsonSerializer.Serialize(newValue),
                 PerformedBy = performedByUserId,
+                SocietyID = societyId,
                 Timestamp = DateTime.UtcNow
             };
 

@@ -115,7 +115,7 @@ namespace DairyManagementSystem.Services
                 _auditService.Log(nameof(Farmer), farmer.FarmerID, AuditAction.Created,
                     oldValue: null,
                     newValue: new { farmer.FarmerCode, farmer.FullName, farmer.Phone, farmer.SocietyID, LoginEmail = loginEmail },
-                    performedByUserId);
+                    performedByUserId, farmer.SocietyID);
 
                 await _unitOfWork.SaveChangesAsync(ct); // persists the audit row
 
@@ -193,7 +193,7 @@ namespace DairyManagementSystem.Services
                     farmer.IFSC,
                     LoginEmail = loginEmail
                 },
-                performedByUserId);
+                performedByUserId, farmer.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
         }
@@ -221,7 +221,7 @@ namespace DairyManagementSystem.Services
                 isActive ? AuditAction.Activated : AuditAction.Deactivated,
                 oldValue: new { IsActive = !isActive },
                 newValue: new { IsActive = isActive },
-                performedByUserId);
+                performedByUserId, farmer.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
         }

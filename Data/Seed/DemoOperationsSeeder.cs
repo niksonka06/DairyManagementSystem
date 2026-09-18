@@ -64,6 +64,19 @@ namespace DairyManagementSystem.Data.Seed
                     continue;
                 }
 
+                var hasRealActivity = await db.MilkCollections.AnyAsync(c => c.SocietyID == societyId)
+                    || await db.Dispatches.AnyAsync(d => d.SocietyID == societyId)
+                    || await db.FeedIssues.AnyAsync(i => i.SocietyID == societyId)
+                    || await db.AdvancePayments.AnyAsync(a => a.SocietyID == societyId);
+
+                if (hasRealActivity)
+                {
+                    logger.LogInformation(
+                        "Demo operations seed skipped for society {SocietyId}: operational rows already exist.",
+                        societyId);
+                    continue;
+                }
+
                 var rates = await db.MilkRates
                     .Where(r => r.SocietyID == societyId && r.IsActive)
                     .ToListAsync();

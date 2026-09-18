@@ -1,3 +1,4 @@
+using System.Threading.RateLimiting;
 using DairyManagementSystem.Data;
 using DairyManagementSystem.Data.Seed;
 using DairyManagementSystem.Interfaces;
@@ -5,6 +6,7 @@ using DairyManagementSystem.Models.Entities;
 using DairyManagementSystem.Repositories;
 using DairyManagementSystem.Services;
 using DairyManagementSystem.Areas.Operator.Filters;
+using DairyManagementSystem.Filters;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -37,6 +39,8 @@ builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new AuthorizeFilter());
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.AddService<MustChangePasswordFilter>();
+    options.Filters.AddService<EnsureActiveOperatorSocietyFilter>();
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -74,7 +78,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.Strict;
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing")
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
     options.LoginPath = "/Account/Login";
@@ -98,6 +102,7 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<ISettlementDeductionRepository, SettlementDeductionRepository>();
 builder.Services.AddScoped<IAdvancePaymentRepository, AdvancePaymentRepository>();
 builder.Services.AddScoped<IDispatchRepository, DispatchRepository>();
+builder.Services.AddScoped<IShiftCloseRepository, ShiftCloseRepository>();
 
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<ISocietyService, SocietyService>();
@@ -110,10 +115,12 @@ builder.Services.AddScoped<IFeedIssueService, FeedIssueService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAdvancePaymentService, AdvancePaymentService>();
 builder.Services.AddScoped<IDispatchService, DispatchService>();
+builder.Services.AddScoped<IShiftCloseService, ShiftCloseService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAuditLogViewService, AuditLogViewService>();
 builder.Services.AddScoped<EnsureActiveOperatorSocietyFilter>();
+builder.Services.AddScoped<MustChangePasswordFilter>();
 
 builder.Services.AddHttpClient("SmsGateway");
 builder.Services.AddScoped<ISmsService, SmsService>();
@@ -127,11 +134,16 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddFixedWindowLimiter("LoginPolicy", opt =>
+    options.AddPolicy("LoginPolicy", httpContext =>
     {
-        opt.PermitLimit = 5;
-        opt.Window = TimeSpan.FromMinutes(1);
-        opt.QueueLimit = 0;
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
     });
 });
 
@@ -150,7 +162,7 @@ using (var scope = app.Services.CreateScope())
 // Order matters here — this is the sequence ASP.NET Core executes per request.
 // ---------------------------------------------------------------------
 
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
@@ -186,7 +198,10 @@ app.UseRouting();
 // endpoint matched, then these decide *who's allowed* to hit it.
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.UseRateLimiter();
+}
 
 app.MapControllerRoute(
     name: "areas",
@@ -197,3 +212,6 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+public partial class Program { }
+

@@ -60,7 +60,7 @@ namespace DairyManagementSystem.Services
             _auditService.Log(nameof(AdvancePayment), advance.AdvancePaymentID, AuditAction.Created,
                 oldValue: null,
                 newValue: new { advance.FarmerID, advance.Amount, advance.PaymentDate },
-                performedByUserId);
+                performedByUserId, advance.SocietyID);
 
             await _unitOfWork.SaveChangesAsync(ct);
 

@@ -74,7 +74,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
             // that can leak another farmer's settlement, even if they guess
             // or enumerate IDs in the URL.
             var payment = await _paymentService.GetByIdForFarmerAsync(id, farmer.FarmerID, ct);
-            if (payment is null)
+            if (payment is null || payment.Status == SettlementStatus.Draft)
             {
                 return NotFound();
             }
@@ -111,7 +111,7 @@ namespace DairyManagementSystem.Areas.Farmer.Controllers
             }
 
             var payment = await _paymentService.GetByIdForFarmerAsync(id, farmer.FarmerID, ct);
-            if (payment is null)
+            if (payment is null || payment.Status == SettlementStatus.Draft)
             {
                 return NotFound();
             }

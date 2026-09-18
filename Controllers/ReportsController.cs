@@ -65,7 +65,8 @@ namespace DairyManagementSystem.Controllers
                         new[] { "Farmer Count", $"{m.FarmerCount}" },
                         new[] { "Average Fat %", $"{m.AverageFatPercent:0.00}%" },
                         new[] { "Morning", $"{m.MorningQuantity:0.00} L / Rs.{m.MorningAmount:0.00}" },
-                        new[] { "Evening", $"{m.EveningQuantity:0.00} L / Rs.{m.EveningAmount:0.00}" }
+                        new[] { "Evening", $"{m.EveningQuantity:0.00} L / Rs.{m.EveningAmount:0.00}" },
+                        new[] { "Rejected quantity", $"{m.RejectedQuantity:0.00} L" }
                     }
                 }
             };
@@ -191,15 +192,52 @@ namespace DairyManagementSystem.Controllers
             var m = await _reportService.GetDispatchReportAsync(resolvedSocietyId.Value, f, t, ct);
             var section = new PdfSection
             {
-                Headers = new[] { "Date", "Vehicle", "Destination", "Collected", "Dispatched", "Variance", "Operator" },
+                Headers = new[] { "Date", "Vehicle", "Destination", "Collected", "Dispatched", "Variance", "Reason", "Operator" },
                 Rows = m.Rows.Select(r => new[]
                 {
                     r.DispatchDate.ToString("dd-MMM-yyyy"), r.VehicleNo, r.Destination,
-                    $"{r.TotalCollected:0.00}L", $"{r.TotalDispatched:0.00}L", $"{r.Variance:0.00}L ({r.VariancePercent:0.0}%)", r.OperatorName
+                    $"{r.TotalCollected:0.00}L", $"{r.TotalDispatched:0.00}L", $"{r.Variance:0.00}L ({r.VariancePercent:0.0}%)",
+                    r.VarianceReason ?? "—", r.OperatorName
                 }).ToList()
             };
             var pdf = PdfReportGenerator.Generate("Dispatch Report", $"{f:dd-MMM-yyyy} to {t:dd-MMM-yyyy}", new[] { section });
             return File(pdf, "application/pdf", $"DispatchReport_{f:yyyyMMdd}_{t:yyyyMMdd}.pdf");
+        }
+
+        public async Task<IActionResult> DailyReconciliation(int? societyId, DateTime? from, DateTime? to, CancellationToken ct)
+        {
+            var resolvedSocietyId = await ResolveSocietyIdAsync(societyId, ct);
+            if (resolvedSocietyId is null) return RedirectToAction(nameof(Index));
+
+            var (f, t) = DefaultRange(from, to);
+            var model = await _reportService.GetDailyReconciliationReportAsync(resolvedSocietyId.Value, f, t, ct);
+            ViewBag.SocietyId = resolvedSocietyId;
+            return View(model);
+        }
+
+        public async Task<IActionResult> DailyReconciliationPdf(int? societyId, DateTime? from, DateTime? to, CancellationToken ct)
+        {
+            var resolvedSocietyId = await ResolveSocietyIdAsync(societyId, ct);
+            if (resolvedSocietyId is null) return BadRequest("Society not resolved.");
+
+            var (f, t) = DefaultRange(from, to);
+            var m = await _reportService.GetDailyReconciliationReportAsync(resolvedSocietyId.Value, f, t, ct);
+            var section = new PdfSection
+            {
+                Headers = new[] { "Date", "Collected", "Dispatched", "Variance", "Reason", "Vehicle", "Destination" },
+                Rows = m.Rows.Select(r => new[]
+                {
+                    r.Date.ToString("dd-MMM-yyyy"),
+                    $"{r.TotalCollected:0.00}L",
+                    r.HasDispatch ? $"{r.TotalDispatched:0.00}L" : "—",
+                    r.HasDispatch ? $"{r.Variance:0.00}L ({r.VariancePercent:0.0}%)" : "No dispatch",
+                    r.VarianceReason ?? "—",
+                    r.VehicleNo ?? "—",
+                    r.Destination ?? "—"
+                }).ToList()
+            };
+            var pdf = PdfReportGenerator.Generate("Daily Dispatch Reconciliation", $"{f:dd-MMM-yyyy} to {t:dd-MMM-yyyy}", new[] { section });
+            return File(pdf, "application/pdf", $"DailyReconciliation_{f:yyyyMMdd}_{t:yyyyMMdd}.pdf");
         }
 
         public async Task<IActionResult> FatAnalysis(int? societyId, DateTime? from, DateTime? to, CancellationToken ct)
