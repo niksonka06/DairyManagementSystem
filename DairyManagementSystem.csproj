@@ -12,6 +12,9 @@
     <Content Remove="DairyManagementSystem.Tests\**" />
     <None Remove="DairyManagementSystem.Tests\**" />
     <EmbeddedResource Remove="DairyManagementSystem.Tests\**" />
+    <Content Remove="build_check\**;_build_verify\**" />
+    <None Remove="build_check\**;_build_verify\**" />
+    <EmbeddedResource Remove="build_check\**;_build_verify\**" />
   </ItemGroup>
 
   <ItemGroup>

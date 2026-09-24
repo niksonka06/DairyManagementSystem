@@ -154,6 +154,12 @@ var app = builder.Build();
 // ---------------------------------------------------------------------
 using (var scope = app.Services.CreateScope())
 {
+    if (args.Contains("--reset-submission-data"))
+    {
+        await SubmissionDataReset.RunAsync(scope.ServiceProvider);
+        return;
+    }
+
     await DbInitializer.SeedAsync(scope.ServiceProvider);
 }
 
